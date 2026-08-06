@@ -2,38 +2,42 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 /**
- * Score-band + stated preference → recommended mam_instrument post IDs.
- * Edited directly in code. Find each instrument's ID by opening it in
- * wp-admin and reading the "post=123" number in the address bar.
+ * Maps quiz preference/archetype to mam_instrument taxonomy terms.
+ * Edited directly in code — no wp-admin UI for this by design.
  */
 class Avayaar_Recommendations {
+    const TAXONOMY = 'mam_instrument_category';
 
-    public static function get_rules() {
+    public static function get_family_term_ids() {
         return array(
-            'rhythm_driven' => array(
-                'string' => array( 209, 207, 190, 188, 169, 167, 165, 160 ), // TODO: گیتار، ویولن
-                'keys'   => array( 162 ), // TODO: پیانو
-                'perc'   => array( 224, 186, 184, 182, 180, 178 ), // TODO: تنبک، دف
-                'none'   => array( 0 ),
-            ),
-            'ear_driven' => array(
-                'string' => array( 209, 207, 190, 188, 169, 167, 165, 160 ),
-                'keys'   => array( 162 ),
-                'perc'   => array( 224, 186, 184, 182, 180, 178 ),
-                'none'   => array( 0 ),
-            ),
-            'balanced' => array(
-                'string' => array( 209, 207, 190, 188, 169, 167, 165, 160 ),
-                'keys'   => array( 162 ),
-                'perc'   => array( 224, 186, 184, 182, 180, 178 ),
-                'none'   => array( 0 ),
-            ),
-            'beginner_friendly' => array(
-                'string' => array( 209, 207, 190, 188, 169, 167, 165, 160 ),
-                'keys'   => array( 162 ),
-                'perc'   => array( 224, 186, 184, 182, 180, 178 ),
-                'none'   => array( 0 ),
-            ),
+            'string'  => 6, // TODO: String Instruments
+            'keys'    => 7, // TODO: Keyboard Instruments
+            'wind'    => 8, // TODO: Wind Instruments
+            'perc'    => 9, // TODO: Percussion Instruments
+            'plucked' => 11, // TODO: Plucked & Hammered Instruments
+            'vocal'   => 12, // TODO: Vocal & Music Education
+            'iranian' => 10, // TODO: Iranian Traditional Instruments
         );
     }
+
+    /**
+     * Only used when the user answered "none" (not sure) to g3.
+     * Picks a sensible default family based on aptitude archetype.
+     */
+    public static function get_archetype_fallback_family() {
+        return array(
+            'rhythm_driven'     => 'perc',
+            'ear_driven'        => 'vocal',
+            'balanced'          => 'keys',
+            'beginner_friendly' => 'vocal',
+        );
+    }
+
+    /**
+     * Term ID for "Children's Music" — used as a bias, not a standalone bucket.
+     */
+    public static function get_children_term_id() {
+        return 13; // TODO: Children's Music
+    }
+
 }

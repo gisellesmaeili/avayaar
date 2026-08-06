@@ -8,9 +8,10 @@ class Avayaar_Scoring {
         $ear_score    = self::score_ear( $answers['ear'] ?? array() );
         $archetype    = self::determine_archetype( $rhythm_score, $ear_score );
 
-        $preference       = $answers['goals']['g3'] ?? 'none';
-        $instrument_ids   = self::get_recommended_ids( $archetype, $preference );
-        $resolved_ids     = self::resolve_instrument_posts( $instrument_ids );
+        $preference = $answers['goals']['g3'] ?? 'none';
+        $age        = $answers['goals']['g2'] ?? '';
+
+        $resolved_ids = self::get_recommended_instruments( $archetype, $preference, $age );
 
         return array(
             'module_scores'           => array( 'rhythm' => $rhythm_score, 'ear' => $ear_score ),
@@ -58,21 +59,41 @@ class Avayaar_Scoring {
         return 'beginner_friendly';
     }
 
-    private static function get_recommended_ids( $archetype, $preference ) {
-        $rules = Avayaar_Recommendations::get_rules();
-        return $rules[ $archetype ][ $preference ] ?? $rules[ $archetype ]['none'] ?? array();
+    private static function get_recommended_instruments( $archetype, $preference, $age ) {
+        $family_ids = Avayaar_Recommendations::get_family_term_ids();
+
+        if ( $preference !== 'none' && ! empty( $family_ids[ $preference ] ) ) {
+            $family_term_id = $family_ids[ $preference ];
+        } else {
+            $fallback_key   = Avayaar_Recommendations::get_archetype_fallback_family()[ $archetype ] ?? 'keys';
+            $family_term_id = $family_ids[ $fallback_key ] ?? 0;
+        }
+
+        if ( empty( $family_term_id ) ) return array();
+
+        $children_term_id = ( $age === 'child' ) ? Avayaar_Recommendations::get_children_term_id() : 0;
+
+        if ( $children_term_id ) {
+            $ids = self::query_by_terms( array( $family_term_id, $children_term_id ) );
+            if ( ! empty( $ids ) ) return $ids;
+        }
+
+        return self::query_by_terms( array( $family_term_id ) );
     }
 
-    private static function resolve_instrument_posts( $instrument_ids ) {
-        $instrument_ids = array_filter( array_map( 'intval', $instrument_ids ) );
-        if ( empty( $instrument_ids ) ) return array();
-
+    private static function query_by_terms( $term_ids ) {
         $posts = get_posts( array(
             'post_type'   => 'mam_instrument',
             'post_status' => 'publish',
-            'post__in'    => $instrument_ids,
-            'orderby'     => 'post__in',
             'numberposts' => -1,
+            'tax_query'   => array(
+                array(
+                    'taxonomy' => Avayaar_Recommendations::TAXONOMY,
+                    'field'    => 'term_id',
+                    'terms'    => $term_ids,
+                    'operator' => count( $term_ids ) > 1 ? 'AND' : 'IN',
+                ),
+            ),
         ) );
 
         return wp_list_pluck( $posts, 'ID' );
