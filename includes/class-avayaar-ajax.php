@@ -30,18 +30,13 @@ class Avayaar_Ajax {
         $wpdb->insert( $wpdb->prefix . 'avayaar_submissions', array(
             'full_name'               => $full_name,
             'phone'                   => $phone,
-            'module_scores'           => wp_json_encode( $result['top_families'] ),
+            'module_scores'           => wp_json_encode( $result['module_scores'] ),
             'answers_log'             => wp_json_encode( $answers ),
-            'archetype'               => $result['badge']['key'],
-            'recommended_instruments' => wp_json_encode( wp_list_pluck( $result['recommended_instruments'], 'id' ) ),
+            'archetype'               => $result['archetype'],
+            'recommended_instruments' => wp_json_encode( $result['recommended_instruments'] ),
             'contacted'               => 0,
         ) );
 
-        wp_send_json_success( array(
-            'top_families' => $result['top_families'],
-            'badge'        => $result['badge'],
-            'instruments'  => $result['recommended_instruments'],
-            'phone_cta'    => AVAYAAR_ACADEMY_PHONE,
-        ) );
+        wp_send_json_success( $result );
     }
 }
