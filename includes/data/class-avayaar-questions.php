@@ -76,4 +76,52 @@ class Avayaar_Questions {
             array( 'id' => 'flower', 'label' => 'شکوفه',    'emoji' => '🌸' ),
         );
     }
+
+    // ---------- Screen 02 — Meet You (profiling only, never scored) ----------
+
+    public static function get_age_ranges() {
+        return array(
+            array( 'id' => '12-17', 'label' => '۱۲–۱۷' ),
+            array( 'id' => '18-24', 'label' => '۱۸–۲۴' ),
+            array( 'id' => '25-34', 'label' => '۲۵–۳۴' ),
+            array( 'id' => '35-44', 'label' => '۳۵–۴۴' ),
+            array( 'id' => '45+',   'label' => '۴۵+' ),
+        );
+    }
+
+    public static function get_music_history_options() {
+        return array(
+            array( 'id' => 'listener', 'label' => 'فقط گوش می‌دم' ),
+            array( 'id' => 'sings',    'label' => 'می‌خونم' ),
+            array( 'id' => 'plays',    'label' => 'ساز می‌زنم' ),
+            array( 'id' => 'played',   'label' => 'قبلاً ساز می‌زدم' ),
+            array( 'id' => 'starting', 'label' => 'تازه می‌خوام شروع کنم' ),
+            array( 'id' => 'unsure',   'label' => 'هنوز مطمئن نیستم' ),
+        );
+    }
+
+    public static function get_instrument_options() {
+        return array(
+            array( 'id' => 'piano',  'label' => 'پیانو' ),
+            array( 'id' => 'guitar', 'label' => 'گیتار' ),
+            array( 'id' => 'violin', 'label' => 'ویولن' ),
+            array( 'id' => 'santur', 'label' => 'سنتور' ),
+            array( 'id' => 'tar',    'label' => 'تار' ),
+            array( 'id' => 'drums',  'label' => 'درامز' ),
+            array( 'id' => 'vocal',  'label' => 'آواز' ),
+            array( 'id' => 'other',  'label' => 'سازی دیگه' ),
+        );
+    }
+
+    public static function get_why_music_options() {
+        return array(
+            array( 'id' => 'self',       'label' => 'برای خودم' ),
+            array( 'id' => 'perform',    'label' => 'برای اجرا' ),
+            array( 'id' => 'serious',    'label' => 'برای یادگیری جدی' ),
+            array( 'id' => 'experience', 'label' => 'برای تجربه کردن' ),
+            array( 'id' => 'career',     'label' => 'برای مسیر حرفه‌ای' ),
+            array( 'id' => 'focus',      'label' => 'برای رشد و تمرکز' ),
+            array( 'id' => 'unsure',     'label' => 'هنوز نمی‌دونم' ),
+        );
+    }
 }

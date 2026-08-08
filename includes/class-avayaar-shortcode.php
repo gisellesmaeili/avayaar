@@ -31,6 +31,10 @@ class Avayaar_Shortcode {
             'style'        => Avayaar_Questions::get_style_clips(),
             'personality'  => Avayaar_Questions::get_personality_questions(),
             'mood'         => Avayaar_Questions::get_mood_options(),
+            'ageRanges'    => Avayaar_Questions::get_age_ranges(),
+            'musicHistory' => Avayaar_Questions::get_music_history_options(),
+            'instruments'  => Avayaar_Questions::get_instrument_options(),
+            'whyMusic'     => Avayaar_Questions::get_why_music_options(),
             'audioBaseUrl' => AVAYAAR_URL . 'assets/audio/',
         ) );
 

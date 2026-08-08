@@ -21,7 +21,8 @@
         styleAnswers: [],
         personalityAnswers: {},
         moodAnswer: null,
-        audioCtx: null
+        audioCtx: null,
+        user: { name: '', age: null, history: null, instruments: [], why: null }
     };
 
     function getAudioCtx() {
@@ -55,6 +56,40 @@
     }
 
     function render(html) { stage.innerHTML = '<div class="avayaar-fade-in">' + html + '</div>'; }
+
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function arrowIcon() {
+        return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>';
+    }
+
+    var ICONS = {
+        headphones: '<path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="2" y="13" width="5" height="7" rx="2"/><rect x="17" y="13" width="5" height="7" rx="2"/>',
+        mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/>',
+        piano: '<rect x="3" y="4" width="18" height="16" rx="1"/><line x1="7" y1="4" x2="7" y2="14"/><line x1="11" y1="4" x2="11" y2="14"/><line x1="15" y1="4" x2="15" y2="14"/><line x1="19" y1="4" x2="19" y2="14"/>',
+        rewind: '<path d="M12 5a7 7 0 1 1-6.3 4"/><polyline points="5 3 5 9 11 9"/>',
+        spark: '<path d="M12 2l1.8 5.6L19 9l-5.2 1.4L12 16l-1.8-5.6L5 9l5.2-1.4L12 2z"/>',
+        help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.9.4-1.5 1-1.5 2.2"/><line x1="12" y1="17" x2="12" y2="17.1"/>',
+        heart: '<path d="M12 20s-7-4.4-9.5-8.8C.7 8 2 4.6 5.4 4.1 7.6 3.8 9.7 5 12 8c2.3-3 4.4-4.2 6.6-3.9 3.4.5 4.7 3.9 2.9 7.1C19 15.6 12 20 12 20z"/>',
+        cap: '<path d="M12 3 2 8l10 5 10-5-10-5z"/><path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/>',
+        briefcase: '<rect x="3" y="8" width="18" height="12" rx="2"/><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>',
+        target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+        note: '<circle cx="7" cy="17" r="2.5"/><circle cx="16" cy="15" r="2.5"/><path d="M9.5 17V4.5L18.5 3v12"/>'
+    };
+
+    function svgIcon(name, size) {
+        size = size || 26;
+        return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || ICONS.spark) + '</svg>';
+    }
+
+    function meetYouProgress(step, total) {
+        var pct = Math.round((step / total) * 100);
+        return '<div class="avayaar-chapter-head"><span class="avayaar-chapter-label">آشنایی با تو</span><div class="avayaar-chapter-track"><div class="avayaar-chapter-fill" style="width:' + pct + '%"></div></div></div>';
+    }
 
     function playMicroSound() {
         try {
@@ -113,8 +148,7 @@
             '</div>' +
             '<div class="avayaar-entry-bottom">' +
             '<button id="avayaar-start" class="avayaar-entry-cta">' +
-            '<span>شروع تجربه</span>' +
-            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>' +
+            '<span>شروع تجربه</span>' + arrowIcon() +
             '</button>' +
             '<div class="avayaar-entry-meta">۵–۷ دقیقه · تجربه صوتی</div>' +
             '</div>' +
@@ -142,15 +176,155 @@
         });
     }
 
-    // ---------- Screen 01 — Transition ----------
+    // ---------- Screen 01 — Enter the Experience ----------
     function renderTransitionScreen() {
-        render('<div class="avayaar-transition"><p class="avayaar-transition-text">این سفر درباره‌ی توست.</p></div>');
-        setTimeout(startUserInfoStage, 1800);
+        render(
+            '<div class="avayaar-transition">' +
+            '<div class="avayaar-transition-visual">' +
+            '<div class="avayaar-ripple"></div>' +
+            '<svg class="avayaar-wave-morph" viewBox="0 0 300 60" preserveAspectRatio="none">' +
+            '<path d="M0,30 C25,10 50,50 75,30 C100,10 125,50 150,30 C175,10 200,50 225,30 C250,10 275,50 300,30" stroke="#F16923" stroke-width="2" fill="none"/>' +
+            '</svg>' +
+            '</div>' +
+            '<p class="avayaar-transition-text">این سفر درباره‌ی توست.</p>' +
+            '<div class="avayaar-transition-steps">' +
+            '<span class="avayaar-transition-step" data-i="1">گوش می‌دیم.</span>' +
+            '<span class="avayaar-transition-step" data-i="2">انتخاب می‌کنیم.</span>' +
+            '<span class="avayaar-transition-step" data-i="3">کشف می‌کنیم.</span>' +
+            '</div>' +
+            '</div>'
+        );
+        setTimeout(startUserInfoStage, 3400);
     }
 
-    // TODO: Screen 02 (user info) — built in the next step.
-    function startUserInfoStage() {
-        render('<div class="avayaar-transition"><p class="avayaar-transition-text">مرحله بعد به‌زودی اضافه می‌شود…</p></div>');
+    // ---------- Screen 02 — Meet You ----------
+    function startUserInfoStage() { askName(); }
+
+    function askName() {
+        render(
+            meetYouProgress(1, 5) +
+            '<div class="avayaar-meet">' +
+            '<h2 class="avayaar-meet-title">اول با خودت شروع کنیم.</h2>' +
+            '<p class="avayaar-meet-sub">چند انتخاب ساده؛ فقط برای اینکه بهتر بشناسیمت.</p>' +
+            '<div class="avayaar-meet-question">' +
+            '<p class="avayaar-meet-question-text">اسمت چیه؟</p>' +
+            '<div class="avayaar-editorial-input-wrap">' +
+            '<input type="text" id="avayaar-name-input" class="avayaar-editorial-input" placeholder="اسم کوچیکت رو اینجا بنویس…" autocomplete="off" />' +
+            '</div>' +
+            '</div>' +
+            '</div>'
+        );
+        var input = document.getElementById('avayaar-name-input');
+        input.focus();
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                var val = input.value.trim();
+                if (!val) return;
+                state.user.name = val;
+                confirmName(val);
+            }
+        });
+    }
+
+    function confirmName(name) {
+        render(
+            meetYouProgress(1, 5) +
+            '<div class="avayaar-meet avayaar-meet-confirm">' +
+            '<p class="avayaar-meet-name-big">' + escapeHtml(name) + '</p>' +
+            '<p class="avayaar-meet-welcome">خوش اومدی، ' + escapeHtml(name) + '.</p>' +
+            '</div>'
+        );
+        setTimeout(askAge, 1400);
+    }
+
+    function askAge() {
+        var ranges = data.ageRanges || [];
+        var html = meetYouProgress(2, 5) +
+            '<div class="avayaar-meet"><p class="avayaar-meet-question-text">کدوم بازه‌ی سنی به تو نزدیک‌تره؟</p><div class="avayaar-age-list">';
+        ranges.forEach(function(r) {
+            html += '<button type="button" class="avayaar-age-option" data-id="' + r.id + '">' + r.label + '</button>';
+        });
+        html += '</div></div>';
+        render(html);
+        Array.prototype.forEach.call(document.querySelectorAll('.avayaar-age-option'), function(btn) {
+            btn.addEventListener('click', function() {
+                Array.prototype.forEach.call(document.querySelectorAll('.avayaar-age-option'), function(b) { b.classList.remove('is-selected'); });
+                btn.classList.add('is-selected');
+                state.user.age = btn.getAttribute('data-id');
+                setTimeout(askMusicHistory, 450);
+            });
+        });
+    }
+
+    var HISTORY_ICONS = { listener: 'headphones', sings: 'mic', plays: 'piano', played: 'rewind', starting: 'spark', unsure: 'help' };
+
+    function askMusicHistory() {
+        var opts = data.musicHistory || [];
+        var html = meetYouProgress(3, 5) +
+            '<div class="avayaar-meet"><p class="avayaar-meet-question-text">موسیقی تا حالا چه‌قدر توی زندگی‌ت بوده؟</p><div class="avayaar-choice-grid">';
+        opts.forEach(function(o) {
+            html += '<button type="button" class="avayaar-choice-card" data-id="' + o.id + '">' + svgIcon(HISTORY_ICONS[o.id] || 'spark') + '<span>' + o.label + '</span></button>';
+        });
+        html += '</div></div>';
+        render(html);
+        Array.prototype.forEach.call(document.querySelectorAll('.avayaar-choice-card'), function(btn) {
+            btn.addEventListener('click', function() {
+                state.user.history = btn.getAttribute('data-id');
+                btn.classList.add('is-selected');
+                setTimeout(function() {
+                    if (state.user.history === 'plays' || state.user.history === 'played') askInstruments();
+                    else askWhyMusic();
+                }, 350);
+            });
+        });
+    }
+
+    function askInstruments() {
+        var opts = data.instruments || [];
+        var html = meetYouProgress(4, 5) +
+            '<div class="avayaar-meet"><p class="avayaar-meet-question-text">با چه سازی آشنایی داری؟</p><div class="avayaar-instrument-grid">';
+        opts.forEach(function(o) {
+            html += '<button type="button" class="avayaar-instrument-card" data-id="' + o.id + '"><span class="avayaar-instrument-glyph">' + svgIcon('note', 22) + '</span><span>' + o.label + '</span></button>';
+        });
+        html += '</div><button id="avayaar-instruments-next" class="avayaar-entry-cta avayaar-meet-next"><span>ادامه</span>' + arrowIcon() + '</button></div>';
+        render(html);
+        Array.prototype.forEach.call(document.querySelectorAll('.avayaar-instrument-card'), function(btn) {
+            btn.addEventListener('click', function() {
+                var id = btn.getAttribute('data-id');
+                var idx = state.user.instruments.indexOf(id);
+                if (idx === -1) { state.user.instruments.push(id); btn.classList.add('is-selected'); }
+                else { state.user.instruments.splice(idx, 1); btn.classList.remove('is-selected'); }
+            });
+        });
+        document.getElementById('avayaar-instruments-next').addEventListener('click', askWhyMusic);
+    }
+
+    var WHY_ICONS = { self: 'heart', perform: 'mic', serious: 'cap', experience: 'spark', career: 'briefcase', focus: 'target', unsure: 'help' };
+
+    function askWhyMusic() {
+        var opts = data.whyMusic || [];
+        var html = meetYouProgress(5, 5) +
+            '<div class="avayaar-meet"><p class="avayaar-meet-question-text">اگر قرار باشه موسیقی رو جدی‌تر دنبال کنی، بیشتر برای چی می‌خوای؟</p><div class="avayaar-choice-grid">';
+        opts.forEach(function(o) {
+            html += '<button type="button" class="avayaar-choice-card" data-id="' + o.id + '">' + svgIcon(WHY_ICONS[o.id] || 'spark') + '<span>' + o.label + '</span></button>';
+        });
+        html += '</div></div>';
+        render(html);
+        Array.prototype.forEach.call(document.querySelectorAll('.avayaar-choice-card'), function(btn) {
+            btn.addEventListener('click', function() {
+                state.user.why = btn.getAttribute('data-id');
+                btn.classList.add('is-selected');
+                setTimeout(finishMeetYou, 350);
+            });
+        });
+    }
+
+    function finishMeetYou() {
+        render('<div class="avayaar-transition"><p class="avayaar-transition-text">حالا که با تو آشنا شدیم…</p></div>');
+        setTimeout(function() {
+            render('<div class="avayaar-transition"><p class="avayaar-transition-text avayaar-transition-emphasis">ببینیم ریتمت چطوره.</p></div>');
+            // Chapter 01 — Rhythm (Screens 03–13) is built next.
+        }, 1600);
     }
 
     // ---------- Stage 1: Musical Ear ----------
