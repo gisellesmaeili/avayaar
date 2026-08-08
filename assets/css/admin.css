@@ -1,2 +1,13 @@
+@font-face {
+    font-family: 'IRANYekanXAvayaar';
+    src: url('../fonts/IRANYekanXVFaNumVF.woff2') format('woff2-variations');
+    font-weight: 100 900;
+    font-display: swap;
+}
+.avayaar-root, .avayaar-detail, .avayaar-result {
+    font-family: 'IRANYekanXAvayaar', Tahoma, sans-serif;
+}
+
 .avayaar-detail table { margin-bottom: 24px; }
 .avayaar-detail h3 { margin-top: 24px; }
+

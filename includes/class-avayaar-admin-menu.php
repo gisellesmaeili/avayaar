@@ -9,8 +9,7 @@ class Avayaar_Admin_Menu {
     }
 
     public function register_menu() {
-        $icon = plugin_dir_url( __FILE__ ) . '../assets/icons/music.svg';
-        add_menu_page( 'آوایار', 'آوایار', 'manage_options', 'avayaar', array( $this, 'render_page' ), $icon, 26 );
+        add_menu_page( 'آوایار', 'آوایار', 'manage_options', 'avayaar', array( $this, 'render_page' ), 'dashicons-format-audio', 26 );
         add_submenu_page( 'avayaar', 'سرنخ‌ها', 'سرنخ‌ها', 'manage_options', 'avayaar', array( $this, 'render_page' ) );
     }
 
@@ -64,83 +63,42 @@ class Avayaar_Admin_Menu {
             return;
         }
 
-        $scores         = json_decode( $row->module_scores, true );
+        $top_families   = json_decode( $row->module_scores, true );
         $answers        = json_decode( $row->answers_log, true );
         $instrument_ids = json_decode( $row->recommended_instruments, true );
 
-        $goals_questions = array();
-        foreach ( Avayaar_Questions::get_goals_questions() as $q ) $goals_questions[ $q['id'] ] = $q;
-
-        $ear_questions = array();
-        foreach ( Avayaar_Questions::get_ear_questions() as $q ) $ear_questions[ $q['id'] ] = $q;
+        $family_labels = array(
+                'string' => 'زهی', 'keys' => 'کلاویه‌ای', 'wind' => 'بادی', 'perc' => 'کوبه‌ای',
+                'plucked' => 'زهی مضرابی', 'vocal' => 'آواز', 'iranian' => 'سنتی ایرانی',
+        );
         ?>
         <div class="wrap avayaar-detail">
             <h1><a href="<?php echo esc_url( admin_url( 'admin.php?page=avayaar' ) ); ?>">&rarr; بازگشت</a></h1>
             <h2><?php echo esc_html( $row->full_name ); ?> — <?php echo esc_html( $row->phone ); ?></h2>
-            <p>
-                تاریخ: <?php echo esc_html( date_i18n( 'Y/m/d H:i', strtotime( $row->created_at ) ) ); ?> —
-                پروفایل: <strong><?php echo esc_html( $row->archetype ); ?></strong> —
-                امتیاز ریتم: <?php echo esc_html( $scores['rhythm'] ?? '-' ); ?>٪ —
-                امتیاز شنوایی: <?php echo esc_html( $scores['ear'] ?? '-' ); ?>٪
-            </p>
+            <p>تاریخ: <?php echo esc_html( date_i18n( 'Y/m/d H:i', strtotime( $row->created_at ) ) ); ?> — نشان: <strong><?php echo esc_html( $row->archetype ); ?></strong></p>
+
+            <h3>بهترین تطبیق‌ها</h3>
+            <table class="widefat striped">
+                <?php foreach ( (array) $top_families as $family => $pct ) : ?>
+                    <tr><td><?php echo esc_html( $family_labels[ $family ] ?? $family ); ?></td><td><?php echo esc_html( $pct ); ?>٪</td></tr>
+                <?php endforeach; ?>
+            </table>
 
             <h3>سازهای پیشنهادی</h3>
             <ul>
-                <?php if ( is_array( $instrument_ids ) && $instrument_ids ) : ?>
-                    <?php foreach ( $instrument_ids as $iid ) : ?>
-                        <li><?php echo esc_html( get_the_title( $iid ) ?: ( 'شناسه ' . $iid ) ); ?></li>
-                    <?php endforeach; ?>
-                <?php else : ?>
-                    <li>موردی ثبت نشده.</li>
-                <?php endif; ?>
+                <?php foreach ( (array) $instrument_ids as $iid ) : ?>
+                    <li><?php echo esc_html( get_the_title( $iid ) ?: ( 'شناسه ' . $iid ) ); ?></li>
+                <?php endforeach; ?>
             </ul>
 
-            <h3>پاسخ‌های بخش اهداف</h3>
+            <h3>پاسخ‌ها</h3>
             <table class="widefat striped">
-                <?php foreach ( ( $answers['goals'] ?? array() ) as $qid => $val ) :
-                    $q = $goals_questions[ $qid ] ?? null;
-                    if ( ! $q ) continue;
-                    ?>
-                    <tr>
-                        <td><?php echo esc_html( $q['question'] ); ?></td>
-                        <td><?php echo esc_html( $q['options'][ $val ] ?? $val ); ?></td>
-                    </tr>
-                <?php endforeach; ?>
-            </table>
-
-            <h3>پاسخ‌های بخش شنوایی</h3>
-            <table class="widefat striped">
-                <thead><tr><th>سوال</th><th>نتیجه</th></tr></thead>
-                <tbody>
-                <?php foreach ( ( $answers['ear'] ?? array() ) as $entry ) :
-                    $q = $ear_questions[ $entry['id'] ] ?? null;
-                    if ( ! $q ) continue;
-                    $is_correct = $entry['answer'] === $q['correct'];
-                    ?>
-                    <tr>
-                        <td><?php echo esc_html( $entry['id'] ); ?></td>
-                        <td><?php echo $is_correct ? '✅ درست' : '❌ نادرست'; ?></td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
-
-            <h3>پاسخ‌های بخش ریتم</h3>
-            <table class="widefat striped">
-                <thead><tr><th>الگو</th><th>میانگین خطا (میلی‌ثانیه)</th><th>ارزیابی</th></tr></thead>
-                <tbody>
-                <?php foreach ( ( $answers['rhythm'] ?? array() ) as $entry ) :
-                    $deltas = $entry['tap_deltas_ms'] ?? array();
-                    $avg    = $deltas ? array_sum( array_map( 'abs', $deltas ) ) / count( $deltas ) : 0;
-                    $label  = $avg < 120 ? 'عالی' : ( $avg < 250 ? 'خوب' : 'قابل تمرین' );
-                    ?>
-                    <tr>
-                        <td><?php echo esc_html( $entry['id'] ); ?></td>
-                        <td><?php echo esc_html( round( $avg ) ); ?></td>
-                        <td><?php echo esc_html( $label ); ?></td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
+                <tr><td>حس ضرب</td><td><?php echo esc_html( $answers['ear']['tempo'] ?? '-' ); ?></td></tr>
+                <tr><td>ریتم منظم‌تر</td><td><?php echo esc_html( $answers['ear']['regularity'] ?? '-' ); ?></td></tr>
+                <tr><td>سبک‌های پسندیده</td><td><?php echo esc_html( implode( '، ', $answers['style'] ?? array() ) ); ?></td></tr>
+                <tr><td>تعطیلات</td><td><?php echo esc_html( $answers['personality']['vacation'] ?? '-' ); ?></td></tr>
+                <tr><td>حس روی صحنه</td><td><?php echo esc_html( $answers['personality']['stage'] ?? '-' ); ?></td></tr>
+                <tr><td>حال‌وهوا</td><td><?php echo esc_html( $answers['mood'] ?? '-' ); ?></td></tr>
             </table>
         </div>
         <?php

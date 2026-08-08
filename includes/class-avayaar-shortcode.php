@@ -24,11 +24,14 @@ class Avayaar_Shortcode {
         wp_enqueue_script( 'avayaar-quiz' );
 
         wp_localize_script( 'avayaar-quiz', 'AvayaarData', array(
-            'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-            'nonce'   => wp_create_nonce( 'avayaar_submit' ),
-            'rhythm'  => Avayaar_Questions::get_rhythm_patterns(),
-            'ear'     => Avayaar_Questions::get_ear_questions_frontend(),
-            'goals'   => Avayaar_Questions::get_goals_questions(),
+            'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
+            'nonce'        => wp_create_nonce( 'avayaar_submit' ),
+            'rhythm'       => Avayaar_Questions::get_rhythm_patterns(),
+            'ear'          => Avayaar_Questions::get_ear_stage(),
+            'style'        => Avayaar_Questions::get_style_clips(),
+            'personality'  => Avayaar_Questions::get_personality_questions(),
+            'mood'         => Avayaar_Questions::get_mood_options(),
+            'audioBaseUrl' => AVAYAAR_URL . 'assets/audio/',
         ) );
 
         return '<div id="avayaar-root" dir="rtl" class="avayaar-root"></div>';
