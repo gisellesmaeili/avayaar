@@ -714,3 +714,89 @@
 /* ============ Mood self-report variants (Screen 23) ============ */
 .avayaar-scene-bright { background: linear-gradient(135deg, rgba(241,105,35,0.18), rgba(241,105,35,0.04)); }
 .avayaar-scene-deep   { background: linear-gradient(135deg, rgba(24,40,66,0.9), rgba(11,17,27,0.9)); }
+
+/* ============ Chapter 03 — Music Taste (Flow) ============ */
+.avayaar-taste-shell::before {
+    content: ''; position: absolute; inset: 0; z-index: -1;
+    background: radial-gradient(circle at 50% 25%, rgba(241,105,35,0.05), transparent 55%);
+}
+.avayaar-orb-cluster { position: relative; width: 220px; height: 140px; margin: 0 auto; }
+.avayaar-orb-cluster span {
+    position: absolute; width: 16px; height: 16px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(241,105,35,0.9), rgba(241,105,35,0.15));
+    animation: avayaarFloat 4s ease-in-out infinite;
+}
+.avayaar-orb-cluster span:nth-child(1) { top: 10px; left: 30px; animation-delay: 0s; }
+.avayaar-orb-cluster span:nth-child(2) { top: 50px; left: 100px; width: 22px; height: 22px; animation-delay: .6s; }
+.avayaar-orb-cluster span:nth-child(3) { top: 20px; left: 170px; animation-delay: 1.2s; }
+.avayaar-orb-cluster span:nth-child(4) { top: 90px; left: 50px; width: 12px; height: 12px; animation-delay: 1.8s; }
+.avayaar-orb-cluster span:nth-child(5) { top: 95px; left: 150px; animation-delay: 2.4s; }
+@keyframes avayaarFloat { 0%, 100% { transform: translateY(0); opacity: 0.75; } 50% { transform: translateY(-10px); opacity: 1; } }
+
+.avayaar-track-player { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.avayaar-track-dot {
+    width: 64px; height: 64px; border-radius: 50%; border: none; cursor: pointer;
+    background: radial-gradient(circle at 35% 30%, rgba(241,105,35,0.85), rgba(241,105,35,0.25) 70%);
+    box-shadow: 0 0 30px rgba(241,105,35,0.2);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    transition: transform 0.2s ease;
+}
+.avayaar-track-dot:active { transform: scale(0.94); }
+.avayaar-track-timer { font-size: 12px; color: var(--avayaar-body); opacity: 0.6; }
+
+.avayaar-swipe-row { display: flex; align-items: center; justify-content: center; gap: 28px; margin-top: 10px; }
+.avayaar-swipe-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    background: none; border: 1px solid rgba(255,255,255,0.15); border-radius: 999px;
+    color: var(--avayaar-body); font-family: inherit; font-size: 13px; padding: 14px 22px; cursor: pointer;
+    transition: all 0.25s ease;
+}
+.avayaar-swipe-btn.like { border-color: rgba(241,105,35,0.4); }
+.avayaar-swipe-btn:hover { transform: translateY(-2px); }
+.avayaar-swipe-btn.like:hover { color: var(--avayaar-accent); border-color: var(--avayaar-accent); }
+
+.avayaar-track-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; }
+.avayaar-track-card { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.avayaar-track-label { font-size: 13px; color: var(--avayaar-body); }
+
+.avayaar-tag-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 10px 0; }
+.avayaar-tag-pill {
+    display: flex; align-items: center; gap: 8px;
+    border: 1px solid rgba(241,105,35,0.3); border-radius: 999px; padding: 8px 16px;
+    font-size: 13px; color: var(--avayaar-heading); opacity: 0; animation: avayaarFadeUp 0.5s ease forwards;
+}
+.avayaar-tag-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--avayaar-accent); }
+
+.avayaar-countdown-num { font-size: 64px; font-weight: 700; color: var(--avayaar-accent); }
+
+/* ============ Chapter 04 — Musical Personality (Orbit) ============ */
+.avayaar-personality-shell::before {
+    content: ''; position: absolute; inset: 0; z-index: -1;
+    background: radial-gradient(circle at 50% 25%, rgba(79,124,255,0.06), transparent 55%);
+}
+.avayaar-orbit-visual { position: relative; width: 220px; height: 220px; margin: 0 auto; }
+.avayaar-orbit-center {
+    position: absolute; top: 50%; left: 50%; width: 26px; height: 26px; margin: -13px;
+    border-radius: 50%; background: var(--avayaar-accent); box-shadow: 0 0 24px rgba(241,105,35,0.5);
+}
+.avayaar-orbit-node {
+    position: absolute; display: flex; align-items: center; justify-content: center;
+    min-width: 60px; padding: 6px 12px; border-radius: 999px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+    font-size: 12px; color: var(--avayaar-body); text-align: center;
+    animation: avayaarOrbitFloat 5s ease-in-out infinite;
+}
+.avayaar-orbit-node.is-selectable { cursor: pointer; transition: all 0.25s ease; }
+.avayaar-orbit-node.is-selectable:hover { border-color: var(--avayaar-accent); color: var(--avayaar-heading); }
+.avayaar-orbit-node.is-selected { border-color: var(--avayaar-accent); background: rgba(241,105,35,0.15); color: var(--avayaar-heading); }
+@keyframes avayaarOrbitFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+.avayaar-spotlight { position: relative; width: 160px; height: 100px; margin: 0 auto; }
+.avayaar-spotlight::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, rgba(241,105,35,0.18), transparent 70%);
+    animation: avayaarFadeIn 1s ease forwards;
+}
+
+.avayaar-multi-hint { font-size: 12px; color: var(--avayaar-body); opacity: 0.6; margin-top: -8px; }
+.avayaar-choice-card.avayaar-multi-selected { border-color: var(--avayaar-accent); background: rgba(241,105,35,0.12); }

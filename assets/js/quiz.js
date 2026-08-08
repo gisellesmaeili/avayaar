@@ -24,7 +24,9 @@
         audioCtx: null,
         user: { name: '', age: null, history: null, instruments: [], why: null },
         chapterRhythm: { regularity: null, speed: null, memory: null, missingBeat: null, energy: null, sync: [], personality: null, finalTap: null },
-        chapterEars: { lowHigh: null, tripletMiddle: null, similarity: null, oddOne: null, direction: null, pitchMove: null, noteCount: null, melodyDirection: null, mood: null, modeCompare: {}, emotionalScene: null, timbre: null, instrumentChar: null, soundMemory: null, preference: null, finalMelody: null }
+        chapterEars: { lowHigh: null, tripletMiddle: null, similarity: null, oddOne: null, direction: null, pitchMove: null, noteCount: null, melodyDirection: null, mood: null, modeCompare: {}, emotionalScene: null, timbre: null, instrumentChar: null, soundMemory: null, preference: null, finalMelody: null },
+        chapterTaste: { firstImpression: null, swipes: [], chooseOne: null, headHeart: null, genreSpace: null, genrePicks: [], mood: null, timePlace: null, scene: null, instrumentAttraction: null, blindInstrument: null, replayed: false, rabbitHole: null, wildChoice: null, finalChoice: null },
+        chapterPersonality: { learning: null, patience: null, soloTogether: null, stage: null, perfection: null, rulesFreedom: null, practice: null, deepenWhy: [], identity: null, decisionStyle: null, discovery: null, emotionalConn: null, selfTrait: null, wildcard: null, finalWildcard: null }
     };
 
     function getAudioCtx() {
@@ -80,7 +82,12 @@
         cap: '<path d="M12 3 2 8l10 5 10-5-10-5z"/><path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/>',
         briefcase: '<rect x="3" y="8" width="18" height="12" rx="2"/><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>',
         target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
-        note: '<circle cx="7" cy="17" r="2.5"/><circle cx="16" cy="15" r="2.5"/><path d="M9.5 17V4.5L18.5 3v12"/>'
+        note: '<circle cx="7" cy="17" r="2.5"/><circle cx="16" cy="15" r="2.5"/><path d="M9.5 17V4.5L18.5 3v12"/>',
+        eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+        hand: '<path d="M8 13V6a1.5 1.5 0 0 1 3 0v5"/><path d="M11 11V4.5a1.5 1.5 0 0 1 3 0V11"/><path d="M14 11.5V6a1.5 1.5 0 0 1 3 0v8"/><path d="M8 12l-1.8-1.8a1.5 1.5 0 0 0-2.2 2L7 15.5c1.5 2.5 3.5 4.5 7 4.5 3.5 0 6-2.5 6-6v-3"/>',
+        puzzle: '<path d="M10 3h4v3.2a1.8 1.8 0 1 1 0 3.6V13h-3.2a1.8 1.8 0 1 0-3.6 0H4V9.8a1.8 1.8 0 1 0 0-3.6V3h3.2a1.8 1.8 0 1 1 3.6 0z"/>',
+        play: '<polygon points="6 3 20 12 6 21 6 3"/>',
+        repeat: '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'
     };
 
     function svgIcon(name, size) {
@@ -106,9 +113,25 @@
         });
     }
 
+    function tasteShell(step, html) { return chapterProgress('سلیقه‌ات', step, 17) + '<div class="avayaar-chapter-shell avayaar-taste-shell">' + html + '</div>'; }
+    function personalityShell(step, html) { return chapterProgress('خودت', step, 17) + '<div class="avayaar-chapter-shell avayaar-personality-shell">' + html + '</div>'; }
+
+    function playClipAudio(file, onEnd) {
+        try {
+            var audio = new Audio(data.audioBaseUrl + file);
+            audio.addEventListener('ended', onEnd || function() {});
+            audio.play().catch(function() { if (onEnd) setTimeout(onEnd, 400); });
+            return audio;
+        } catch (e) { if (onEnd) setTimeout(onEnd, 400); return null; }
+    }
+
+    function trackPlayer(id, onDone) {
+        return '<div class="avayaar-track-player"><button type="button" class="avayaar-track-dot" data-file="' + id + '">' + svgIcon('play', 26) + '</button><span class="avayaar-track-timer">گوش کن</span></div>';
+    }
+
     // Tap once to preview/replay any option, tap the SAME option again to confirm and move on.
-    function bindPreviewSelect(selector, playFn, onSelect) {
-        Array.prototype.forEach.call(document.querySelectorAll(selector), function(btn) {
+
+    function bindPreviewSelect(selector, playFn, onSelect) {        Array.prototype.forEach.call(document.querySelectorAll(selector), function(btn) {
             btn.addEventListener('click', function() {
                 var key = btn.getAttribute('data-key');
                 playFn(key, btn);
@@ -119,6 +142,22 @@
                     Array.prototype.forEach.call(document.querySelectorAll(selector), function(b) { b.classList.remove('is-armed'); });
                     btn.classList.add('is-armed');
                 }
+            });
+        });
+    }
+
+    function bindMultiSelect(selector, max, onChange) {
+        var picked = [];
+        Array.prototype.forEach.call(document.querySelectorAll(selector), function(btn) {
+            btn.addEventListener('click', function() {
+                var val = btn.getAttribute('data-val');
+                var idx = picked.indexOf(val);
+                if (idx > -1) { picked.splice(idx, 1); btn.classList.remove('avayaar-multi-selected'); }
+                else {
+                    if (picked.length >= max) { var first = picked.shift(); var firstBtn = document.querySelector(selector + '[data-val="' + first + '"]'); if (firstBtn) firstBtn.classList.remove('avayaar-multi-selected'); }
+                    picked.push(val); btn.classList.add('avayaar-multi-selected');
+                }
+                onChange(picked);
             });
         });
     }
@@ -948,59 +987,524 @@
         setTimeout(startStyleStage, 1800);
     }
 
-    // ---------- Stage 3: Music Style ----------
-    function startStyleStage() {
-        var clips = data.style;
-        var html = progressBar() + '<div class="avayaar-card"><div class="avayaar-stage-label">مرحله ۳ · سبک موسیقی ❤️</div><p>هر کدوم رو دوست داشتی، قلب بزن. می‌تونی چندتا رو انتخاب کنی.</p><div class="avayaar-clip-list">';
-        clips.forEach(function(c) {
-            html += '<div class="avayaar-clip-row" data-id="' + c.id + '">' +
-                '<button class="avayaar-btn avayaar-play-clip" data-file="' + c.file + '">▶ ' + c.label + '</button>' +
-                '<button class="avayaar-like-btn" data-id="' + c.id + '">🤍</button></div>';
-        });
-        html += '</div><button id="avayaar-style-next" class="avayaar-btn-primary">ادامه</button></div>';
-        render(html);
+    // ================= CHAPTER 03 — MUSIC TASTE (Screens 31–47) =================
 
-        Array.prototype.forEach.call(document.querySelectorAll('.avayaar-play-clip'), function(btn) {
-            btn.addEventListener('click', function() {
-                var audio = new Audio(AvayaarData.audioBaseUrl + btn.getAttribute('data-file'));
-                audio.play().catch(function() { /* file not uploaded yet — fails silently in dev */ });
-            });
-        });
-        Array.prototype.forEach.call(document.querySelectorAll('.avayaar-like-btn'), function(btn) {
-            btn.addEventListener('click', function() {
-                var id = btn.getAttribute('data-id');
-                var i = state.styleAnswers.indexOf(id);
-                if (i === -1) { state.styleAnswers.push(id); btn.textContent = '❤️'; btn.classList.add('liked'); }
-                else { state.styleAnswers.splice(i, 1); btn.textContent = '🤍'; btn.classList.remove('liked'); }
-            });
-        });
-        document.getElementById('avayaar-style-next').addEventListener('click', function() { stageComplete(startPersonalityStage); });
+    var TASTE_TRACKS = null; // resolved lazily from data.tasteTracks
+    function trackById(id) { TASTE_TRACKS = TASTE_TRACKS || data.tasteTracks || []; return TASTE_TRACKS.filter(function(t) { return t.id === id; })[0] || TASTE_TRACKS[0]; }
+
+    function startStyleStage() { tasteIntro(); }
+
+    function tasteIntro() {
+        render(
+            '<div class="avayaar-chapter-shell avayaar-taste-shell">' +
+            '<div class="avayaar-orb-cluster"><span></span><span></span><span></span><span></span><span></span></div>' +
+            '<h2 class="avayaar-chapter-heading">حالا بریم سراغ سلیقه‌ات.</h2>' +
+            '<p class="avayaar-chapter-sub">بعضی صداها رو دوست داریم، بدون اینکه بدونیم چرا.</p>' +
+            '<button id="avayaar-taste-start" class="avayaar-entry-cta"><span>ببینیم تو کدوم‌ها رو انتخاب می‌کنی</span>' + arrowIcon() + '</button>' +
+            '</div>'
+        );
+        document.getElementById('avayaar-taste-start').addEventListener('click', tasteFirstImpression);
     }
 
-    // ---------- Stage 4: Personality ----------
-    function startPersonalityStage(idx) {
-        idx = idx || 0;
-        var questions = data.personality;
-        if (idx >= questions.length) return stageComplete(startMoodStage);
+    function playableCard(fileOrTrackId, label) {
+        return '<button type="button" class="avayaar-track-dot" data-track="' + fileOrTrackId + '">' + svgIcon('play', 24) + '</button>' + (label ? '<span class="avayaar-track-label">' + label + '</span>' : '');
+    }
 
-        var q = questions[idx];
-        var html = progressBar() + '<div class="avayaar-card"><div class="avayaar-stage-label">مرحله ۴ · شخصیت 🎭</div><p>' + q.text + '</p><div class="avayaar-options">';
-        Object.keys(q.options).forEach(function(k) { html += '<button data-val="' + k + '" class="avayaar-btn">' + q.options[k] + '</button>'; });
-        html += '</div></div>';
-        render(html);
+    // Screen 32
+    function tasteFirstImpression() {
+        var t = trackById('track1');
+        render(tasteShell(1, '<p class="avayaar-chapter-heading">گوش کن.</p><div class="avayaar-track-player">' + playableCard(t.file) + '</div>'));
+        document.querySelector('.avayaar-track-dot').addEventListener('click', function(e) {
+            e.currentTarget.disabled = true;
+            playClipAudio(t.file, showFirstImpressionChoices);
+            setTimeout(showFirstImpressionChoices, 4000);
+        });
+    }
+    function showFirstImpressionChoices() {
+        if (document.getElementById('avayaar-fi-choices')) return;
+        var wrap = document.querySelector('.avayaar-taste-shell');
+        var html = '<div id="avayaar-fi-choices"><p class="avayaar-chapter-heading">حست نسبت به این صدا چیه؟</p><div class="avayaar-ab-row">' +
+            '<button type="button" class="avayaar-choice-card" data-val="again">' + svgIcon('heart', 20) + '<span>دوباره می‌شنومش</span></button>' +
+            '<button type="button" class="avayaar-choice-card" data-val="ok">' + svgIcon('note', 20) + '<span>بد نبود</span></button>' +
+            '<button type="button" class="avayaar-choice-card" data-val="skip">' + svgIcon('help', 20) + '<span>ارتباط نگرفتم</span></button>' +
+            '</div></div>';
+        if (wrap) wrap.insertAdjacentHTML('beforeend', html);
+        bindChoiceCards(function(val) { state.chapterTaste.firstImpression = val; setTimeout(tasteSwipe.bind(null, 0), 350); });
+    }
 
-        Array.prototype.forEach.call(document.querySelectorAll('.avayaar-options button'), function(btn) {
+    // Screen 33 — 3 quick swipe rounds
+    function tasteSwipe(round) {
+        if (round >= 3) return tasteChooseOne();
+        var t = trackById('track' + (2 + round));
+        render(tasteShell(2, '<p class="avayaar-chapter-heading">گوش کن…</p><div class="avayaar-track-player">' + playableCard(t.file) + '</div>' +
+            '<div class="avayaar-swipe-row">' +
+            '<button type="button" class="avayaar-swipe-btn" data-val="skip"><span>←</span><span>نه</span></button>' +
+            '<button type="button" class="avayaar-swipe-btn like" data-val="like"><span>→</span><span>آره</span></button>' +
+            '</div>'));
+        document.querySelector('.avayaar-track-dot').addEventListener('click', function() { playClipAudio(t.file); });
+        Array.prototype.forEach.call(document.querySelectorAll('.avayaar-swipe-btn'), function(btn) {
             btn.addEventListener('click', function() {
-                state.personalityAnswers[q.id] = btn.getAttribute('data-val');
-                startPersonalityStage(idx + 1);
+                state.chapterTaste.swipes.push({ track: t.id, choice: btn.getAttribute('data-val') });
+                setTimeout(function() { tasteSwipe(round + 1); }, 300);
             });
         });
     }
 
-    // ---------- Stage 5: Mood ----------
+    // Screen 34
+    function tasteChooseOne() {
+        var ids = ['track4', 'track5', 'track6'];
+        var html = '<p class="avayaar-chapter-heading">اگر فقط یکی رو دوباره بشنوی، کدومه؟</p><div class="avayaar-track-grid">';
+        ids.forEach(function(id, i) { var t = trackById(id); html += '<div class="avayaar-track-card">' + playableCard(t.file) + '<span class="avayaar-track-label">' + ['A', 'B', 'C'][i] + '</span></div>'; });
+        html += '</div><div class="avayaar-ab-row" id="avayaar-choose-one-confirm" style="display:none">' +
+            '<button type="button" class="avayaar-choice-card" data-val="A">A</button>' +
+            '<button type="button" class="avayaar-choice-card" data-val="B">B</button>' +
+            '<button type="button" class="avayaar-choice-card" data-val="C">C</button></div>';
+        render(tasteShell(3, html));
+        Array.prototype.forEach.call(document.querySelectorAll('.avayaar-track-dot'), function(btn, i) {
+            btn.addEventListener('click', function() { playClipAudio(ids.map(trackById)[i].file); document.getElementById('avayaar-choose-one-confirm').style.display = 'flex'; });
+        });
+        bindChoiceCards(function(val) { state.chapterTaste.chooseOne = val; setTimeout(tasteHeadVsHeart, 350); });
+    }
+
+    // Screen 35
+    function tasteHeadVsHeart() {
+        var a = trackById('track7'), b = trackById('track8');
+        var html = '<p class="avayaar-chapter-heading">کدوم بیشتر به دلت نشست؟</p><div class="avayaar-track-grid">' +
+            '<div class="avayaar-track-card">' + playableCard(a.file) + '<span class="avayaar-track-label">A</span></div>' +
+            '<div class="avayaar-track-card">' + playableCard(b.file) + '<span class="avayaar-track-label">B</span></div>' +
+            '</div><div class="avayaar-ab-row"><button type="button" class="avayaar-choice-card" data-val="a">A</button><button type="button" class="avayaar-choice-card" data-val="b">B</button></div>';
+        render(tasteShell(4, html));
+        var files = [a.file, b.file];
+        Array.prototype.forEach.call(document.querySelectorAll('.avayaar-track-dot'), function(btn, i) { btn.addEventListener('click', function() { playClipAudio(files[i]); }); });
+        bindChoiceCards(function(val) { state.chapterTaste.headHeart = val; setTimeout(tasteGenreDiscovery, 350); });
+    }
+
+    // Screen 36 — unlabeled genre space
+    function tasteGenreDiscovery() {
+        var clips = (data.tasteGenreClips || []).slice(0, 4);
+        var html = '<p class="avayaar-chapter-heading">کدوم فضا بیشتر جذب‌ت می‌کنه؟</p><div class="avayaar-track-grid">';
+        clips.forEach(function(c, i) { html += '<div class="avayaar-track-card">' + playableCard(c.file) + '<span class="avayaar-track-label">' + ['A', 'B', 'C', 'D'][i] + '</span></div>'; });
+        html += '</div>';
+        render(tasteShell(5, html));
+        Array.prototype.forEach.call(document.querySelectorAll('.avayaar-track-dot'), function(btn, i) {
+            btn.addEventListener('click', function() {
+                playClipAudio(clips[i].file);
+                state.chapterTaste.genreSpace = clips[i].id;
+                var note = document.getElementById('avayaar-genre-picked');
+                if (!note) { note = document.createElement('p'); note.id = 'avayaar-genre-picked'; note.className = 'avayaar-chapter-sub'; document.querySelector('.avayaar-taste-shell').appendChild(note); }
+                note.textContent = 'انتخاب شد.';
+                setTimeout(tasteGenreBattle.bind(null, ['classical', 'traditional', 'rock', 'pop', 'jazz'], 0), 900);
+            });
+        });
+    }
+
+    // Screen 37 — tournament, narrows 5 genres down via pairwise picks
+    function tasteGenreBattle(remaining, round) {
+        if (remaining.length <= 1) { state.chapterTaste.genrePicks.push(remaining[0]); return tasteMood(); }
+        var a = remaining[0], b = remaining[1];
+        var clipA = (data.tasteGenreClips || []).filter(function(c) { return c.id === a; })[0];
+        var clipB = (data.tasteGenreClips || []).filter(function(c) { return c.id === b; })[0];
+        var html = '<p class="avayaar-chapter-heading">کدوم رو انتخاب می‌کنی؟</p><div class="avayaar-track-grid">' +
+            '<div class="avayaar-track-card">' + playableCard(clipA.file) + '<span class="avayaar-track-label">A</span></div>' +
+            '<div class="avayaar-track-card">' + playableCard(clipB.file) + '<span class="avayaar-track-label">B</span></div>' +
+            '</div><div class="avayaar-ab-row"><button type="button" class="avayaar-choice-card" data-val="a">A</button><button type="button" class="avayaar-choice-card" data-val="b">B</button></div>';
+        render(tasteShell(6, html));
+        var files = [clipA.file, clipB.file];
+        Array.prototype.forEach.call(document.querySelectorAll('.avayaar-track-dot'), function(btn, i) { btn.addEventListener('click', function() { playClipAudio(files[i]); }); });
+        bindChoiceCards(function(val) {
+            var winner = val === 'a' ? a : b;
+            var rest = remaining.slice(2);
+            state.chapterTaste.genrePicks.push(winner);
+            setTimeout(function() { tasteGenreBattle(rest.length ? [winner].concat(rest) : [winner], round + 1); }, 350);
+        });
+    }
+
+    // Screen 38
+    function tasteMood() {
+        var opts = data.tasteMoods || [];
+        var html = '<p class="avayaar-chapter-heading">وقتی موسیقی گوش می‌دی، بیشتر دنبال چه حسی هستی؟</p><div class="avayaar-choice-grid">';
+        opts.forEach(function(o) { html += '<button type="button" class="avayaar-choice-card avayaar-scene-' + (o.id === 'calm' ? 'water' : o.id === 'energy' ? 'city' : o.id === 'focus' ? 'nature' : 'night') + '" data-val="' + o.id + '">' + o.label + '</button>'; });
+        html += '</div>';
+        render(tasteShell(7, html));
+        bindChoiceCards(function(val) { state.chapterTaste.mood = val; setTimeout(tasteTimePlace, 350); });
+    }
+
+    // Screen 39
+    function tasteTimePlace() {
+        var opts = data.tasteTimePlace || [];
+        var html = '<p class="avayaar-chapter-heading">کِی بیشتر دلت می‌خواد موسیقی گوش بدی؟</p><div class="avayaar-choice-grid">';
+        opts.forEach(function(o) { html += '<button type="button" class="avayaar-choice-card" data-val="' + o.id + '"><span>' + o.label + '</span></button>'; });
+        html += '</div>';
+        render(tasteShell(8, html));
+        bindChoiceCards(function(val) { state.chapterTaste.timePlace = val; setTimeout(tastePerfectScene, 350); });
+    }
+
+    // Screen 40
+    function tastePerfectScene() {
+        var opts = data.sceneOptions || [];
+        var html = '<p class="avayaar-chapter-heading">فرض کن الان موسیقی پخش می‌شه. کجایی؟</p><div class="avayaar-scene-grid">';
+        opts.forEach(function(o) { html += '<button type="button" class="avayaar-scene-tile avayaar-scene-' + o.id + '" data-val="' + o.id + '">' + o.label + '</button>'; });
+        html += '</div>';
+        render(tasteShell(9, html));
+        bindChoiceCards(function(val) { state.chapterTaste.scene = val; setTimeout(tasteInstrumentAttraction, 350); }, '.avayaar-scene-tile');
+    }
+
+    var TASTE_INSTRUMENT_TONES = [392, 440, 523, 587];
+
+    // Screen 41
+    function tasteInstrumentAttraction() {
+        var opts = (data.instruments || []).slice(0, 4);
+        var html = '<p class="avayaar-chapter-heading">کدوم صدا بیشتر کنجکاوت می‌کنه؟</p><div class="avayaar-choice-grid">';
+        opts.forEach(function(o, i) { html += '<button type="button" class="avayaar-choice-card" data-key="' + i + '">' + svgIcon('note', 22) + '<span>' + o.label + '</span></button>'; });
+        html += '</div>';
+        render(tasteShell(10, html));
+        bindPreviewSelect('.avayaar-choice-card', function(key) { playTone(TASTE_INSTRUMENT_TONES[key] || 440, 0.5, getAudioCtx().currentTime + 0.05); }, function(key) {
+            state.chapterTaste.instrumentAttraction = opts[key] ? opts[key].id : key; setTimeout(tasteBlindInstrument, 400);
+        });
+    }
+
+    // Screen 42
+    function tasteBlindInstrument() {
+        var html = '<p class="avayaar-chapter-heading">کدوم صدا بیشتر کنجکاوت کرد؟</p><div class="avayaar-ab-row">';
+        ['A', 'B', 'C', 'D'].forEach(function(l, i) { html += '<button type="button" class="avayaar-choice-card" data-key="' + i + '">' + svgIcon('note', 20) + '<span>' + l + '</span></button>'; });
+        html += '</div>';
+        render(tasteShell(11, html));
+        bindPreviewSelect('.avayaar-choice-card', function(key) { playTone(TASTE_INSTRUMENT_TONES[key], 0.5, getAudioCtx().currentTime + 0.05); }, function(key) {
+            state.chapterTaste.blindInstrument = key; setTimeout(tasteRepeatScreen, 400);
+        });
+    }
+
+    // Screen 43
+    function tasteRepeatScreen() {
+        var t = trackById('track9');
+        render(tasteShell(12, '<p class="avayaar-chapter-heading">گوش کن…</p><div class="avayaar-track-player">' + playableCard(t.file) + '</div>'));
+        document.querySelector('.avayaar-track-dot').addEventListener('click', function() { playClipAudio(t.file, showRepeatChoice); setTimeout(showRepeatChoice, 4000); });
+        function showRepeatChoice() {
+            if (document.getElementById('avayaar-repeat-choice')) return;
+            var wrap = document.querySelector('.avayaar-taste-shell');
+            wrap.insertAdjacentHTML('beforeend', '<div id="avayaar-repeat-choice"><p class="avayaar-chapter-heading">دلت می‌خواد دوباره بشنوی؟</p><div class="avayaar-ab-row">' +
+                '<button type="button" class="avayaar-choice-card" id="avayaar-replay-btn">' + svgIcon('repeat', 20) + '<span>دوباره پخش کن</span></button>' +
+                '<button type="button" class="avayaar-entry-cta" id="avayaar-repeat-next"><span>بعدی</span>' + arrowIcon() + '</button></div></div>');
+            document.getElementById('avayaar-replay-btn').addEventListener('click', function() { state.chapterTaste.replayed = true; playClipAudio(t.file); });
+            document.getElementById('avayaar-repeat-next').addEventListener('click', tasteRabbitHole);
+        }
+    }
+
+    // Screen 44
+    function tasteRabbitHole() {
+        var ids = ['track3', 'track6', 'track10'];
+        var html = '<p class="avayaar-chapter-heading">اگر این قطعه رو دوست داشتی، کدوم رو امتحان می‌کنی؟</p><div class="avayaar-track-grid">';
+        ids.forEach(function(id, i) { var t = trackById(id); html += '<div class="avayaar-track-card">' + playableCard(t.file) + '<span class="avayaar-track-label">' + ['A', 'B', 'C'][i] + '</span></div>'; });
+        html += '</div>';
+        render(tasteShell(13, html));
+        Array.prototype.forEach.call(document.querySelectorAll('.avayaar-track-dot'), function(btn, i) {
+            btn.addEventListener('click', function() { playClipAudio(ids.map(trackById)[i].file); state.chapterTaste.rabbitHole = ['A', 'B', 'C'][i]; setTimeout(tasteSoFar, 700); });
+        });
+    }
+
+    // Screen 45
+    function tasteSoFar() {
+        var pool = data.traitPool || {};
+        var keys = Object.keys(pool);
+        var picks = [keys[0] || 'curious', keys[2] || 'expressive', keys[5] || 'explorer'];
+        var html = '<p class="avayaar-chapter-heading">انتخاب‌هات دارن یه الگو می‌سازن…</p><div class="avayaar-tag-list">';
+        picks.forEach(function(k, i) { html += '<span class="avayaar-tag-pill" style="animation-delay:' + (i * 0.15) + 's"><span class="dot"></span>' + (pool[k] || k) + '</span>'; });
+        html += '</div><p class="avayaar-chapter-sub">هنوز چند مرحله مونده.</p>';
+        render(tasteShell(14, html));
+        setTimeout(tasteWildChoice, 2200);
+    }
+
+    // Screen 46 — quick countdown pick
+    function tasteWildChoice() {
+        render(tasteShell(15, '<p class="avayaar-chapter-heading">بدون فکر کردن انتخاب کن.</p><div class="avayaar-countdown-num" id="avayaar-countdown">۳</div>'));
+        var nums = ['۳', '۲', '۱'];
+        var i = 0;
+        var iv = setInterval(function() {
+            i++;
+            var el = document.getElementById('avayaar-countdown');
+            if (i < nums.length) { if (el) el.textContent = nums[i]; }
+            else { clearInterval(iv); showWildChoiceOptions(); }
+        }, 700);
+    }
+    function showWildChoiceOptions() {
+        var a = trackById('track2'), b = trackById('track7');
+        var html = '<p class="avayaar-chapter-heading">یکی رو انتخاب کن.</p><div class="avayaar-track-grid">' +
+            '<div class="avayaar-track-card">' + playableCard(a.file) + '<span class="avayaar-track-label">A</span></div>' +
+            '<div class="avayaar-track-card">' + playableCard(b.file) + '<span class="avayaar-track-label">B</span></div>' +
+            '</div>';
+        render(tasteShell(15, html));
+        var files = [a.file, b.file];
+        Array.prototype.forEach.call(document.querySelectorAll('.avayaar-track-dot'), function(btn, i) {
+            btn.addEventListener('click', function() { state.chapterTaste.wildChoice = ['A', 'B'][i]; playClipAudio(files[i]); setTimeout(tasteFinalChoice, 600); });
+        });
+    }
+
+    // Screen 47
+    function tasteFinalChoice() {
+        var ids = ['track4', 'track8', 'track9'];
+        var html = '<p class="avayaar-chapter-heading">اگر فقط یکی رو بتونی با خودت ببری…</p><div class="avayaar-track-grid">';
+        ids.forEach(function(id, i) { var t = trackById(id); html += '<div class="avayaar-track-card">' + playableCard(t.file) + '<span class="avayaar-track-label">' + ['A', 'B', 'C'][i] + '</span></div>'; });
+        html += '</div>';
+        render(tasteShell(16, html));
+        Array.prototype.forEach.call(document.querySelectorAll('.avayaar-track-dot'), function(btn, i) {
+            btn.addEventListener('click', function() {
+                playClipAudio(ids.map(trackById)[i].file);
+                state.chapterTaste.finalChoice = ['A', 'B', 'C'][i];
+                render(tasteShell(17, '<p class="avayaar-chapter-heading">انتخاب شد.</p>'));
+                setTimeout(tasteToPersonalityTransition, 1000);
+            });
+        });
+    }
+
+    function tasteToPersonalityTransition() {
+        render('<div class="avayaar-transition"><p class="avayaar-transition-text">سلیقه‌ات یه چیزهایی بهمون گفت.</p></div>');
+        setTimeout(function() {
+            render('<div class="avayaar-transition"><p class="avayaar-transition-text">ولی هنوز خودت رو کامل نشناختیم.</p></div>');
+            setTimeout(function() {
+                render('<div class="avayaar-transition"><p class="avayaar-transition-text avayaar-transition-emphasis">بریم سراغ خودت.</p></div>');
+                setTimeout(personalityIntro, 1400);
+            }, 1300);
+        }, 1300);
+    }
+
+    // ================= CHAPTER 04 — YOUR MUSICAL PERSONALITY (Screens 48–64) =================
+
+    function orbitVisual(nodes) {
+        var positions = [
+            { top: '4%', left: '38%' }, { top: '20%', left: '6%' }, { top: '20%', left: '70%' },
+            { top: '70%', left: '6%' }, { top: '70%', left: '70%' }, { top: '86%', left: '38%' }
+        ];
+        var html = '<div class="avayaar-orbit-visual"><div class="avayaar-orbit-center"></div>';
+        nodes.forEach(function(n, i) {
+            var pos = positions[i % positions.length];
+            html += '<div class="avayaar-orbit-node' + (n.selectable ? ' is-selectable' : '') + (n.selected ? ' is-selected' : '') + '" style="top:' + pos.top + ';left:' + pos.left + '" data-val="' + n.id + '">' + n.label + '</div>';
+        });
+        html += '</div>';
+        return html;
+    }
+
+    function personalityIntro() {
+        render(
+            '<div class="avayaar-chapter-shell avayaar-personality-shell">' +
+            orbitVisual([{ id: 'a', label: '' }, { id: 'b', label: '' }, { id: 'c', label: '' }, { id: 'd', label: '' }]) +
+            '<h2 class="avayaar-chapter-heading">حالا نوبت خودته.</h2>' +
+            '<p class="avayaar-chapter-sub">موسیقی فقط چیزی نیست که می‌شنوی.<br>بخشی از نحوه‌ی فکر کردن، انتخاب کردن و احساس کردنت هم هست.</p>' +
+            '<button id="avayaar-personality-start" class="avayaar-entry-cta"><span>ادامه بدیم</span>' + arrowIcon() + '</button>' +
+            '</div>'
+        );
+        document.getElementById('avayaar-personality-start').addEventListener('click', personalityLearningStyle);
+    }
+
+    function optionGrid(opts, iconMap) {
+        var html = '<div class="avayaar-choice-grid">';
+        opts.forEach(function(o) { html += '<button type="button" class="avayaar-choice-card" data-val="' + o.id + '">' + (iconMap && iconMap[o.id] ? svgIcon(iconMap[o.id], 22) : '') + '<span>' + o.label + '</span></button>'; });
+        html += '</div>';
+        return html;
+    }
+
+    // Screen 49
+    function personalityLearningStyle() {
+        var opts = data.learningStyle || [];
+        var iconMap = {}; opts.forEach(function(o) { iconMap[o.id] = o.icon || 'spark'; });
+        render(personalityShell(1, '<p class="avayaar-chapter-heading">وقتی می‌خوای یه چیز جدید یاد بگیری، کدوم حالت بیشتر بهت میاد؟</p>' + optionGrid(opts, iconMap)));
+        bindChoiceCards(function(val) { state.chapterPersonality.learning = val; setTimeout(personalityPatience, 350); });
+    }
+
+    // Screen 50
+    function personalityPatience() {
+        var opts = data.patience || [];
+        render(personalityShell(2, '<p class="avayaar-chapter-heading">وقتی چیزی از همون اول سخت به نظر می‌رسه…</p>' + optionGrid(opts)));
+        bindChoiceCards(function(val) { state.chapterPersonality.patience = val; setTimeout(personalitySoloTogether, 350); });
+    }
+
+    // Screen 51
+    function personalitySoloTogether() {
+        var opts = data.soloTogether || [];
+        render(personalityShell(3, '<p class="avayaar-chapter-heading">ترجیح می‌دی موسیقی رو…</p>' + optionGrid(opts)));
+        bindChoiceCards(function(val) { state.chapterPersonality.soloTogether = val; setTimeout(personalityStage, 350); });
+    }
+
+    // Screen 52
+    function personalityStage() {
+        var opts = data.stageOptions || [];
+        render(personalityShell(4, '<div class="avayaar-spotlight"></div><p class="avayaar-chapter-heading">تصور کن فردا باید روی صحنه اجرا کنی.</p>' + optionGrid(opts)));
+        bindChoiceCards(function(val) { state.chapterPersonality.stage = val; setTimeout(personalityPerfection, 350); });
+    }
+
+    // Screen 53
+    function personalityPerfection() {
+        render(personalityShell(5,
+            '<p class="avayaar-chapter-heading">وقتی موسیقی می‌زنی، کدوم برات مهم‌تره؟</p>' +
+            '<div class="avayaar-spectrum-wrap"><input type="range" min="0" max="100" value="50" id="avayaar-perfection-range" class="avayaar-spectrum-slider" />' +
+            '<div class="avayaar-spectrum-labels"><span>دقیق و تمیز</span><span>احساسی و آزاد</span></div></div>' +
+            '<button id="avayaar-perfection-next" class="avayaar-entry-cta"><span>ادامه</span>' + arrowIcon() + '</button>'
+        ));
+        document.getElementById('avayaar-perfection-next').addEventListener('click', function() {
+            state.chapterPersonality.perfection = document.getElementById('avayaar-perfection-range').value;
+            personalityRulesFreedom();
+        });
+    }
+
+    // Screen 54
+    function personalityRulesFreedom() {
+        var opts = data.rulesFreedom || [];
+        var html = '<p class="avayaar-chapter-heading">کدوم بیشتر بهت میاد؟</p><div class="avayaar-choice-grid">';
+        opts.forEach(function(o) { html += '<button type="button" class="avayaar-choice-card" data-val="' + o.id + '"><span>' + o.label + '</span><span class="avayaar-chapter-sub" style="margin:4px 0 0;font-size:12px">' + o.desc + '</span></button>'; });
+        html += '</div>';
+        render(personalityShell(6, html));
+        bindChoiceCards(function(val) { state.chapterPersonality.rulesFreedom = val; setTimeout(personalityPractice, 350); });
+    }
+
+    // Screen 55
+    function personalityPractice() {
+        var opts = data.practiceOptions || [];
+        render(personalityShell(7, '<p class="avayaar-chapter-heading">اگر یک ساز رو دوست داشته باشی، چقدر احتمال داره براش وقت بذاری؟</p>' + optionGrid(opts)));
+        bindChoiceCards(function(val) { state.chapterPersonality.practice = val; setTimeout(personalityDeepenWhy, 350); });
+    }
+
+    // Screen 56 — up to 2 selections
+    function personalityDeepenWhy() {
+        var opts = data.deepenWhy || [];
+        var html = '<p class="avayaar-chapter-heading">آخرش دوست داری موسیقی چه چیزی بهت بده؟</p><p class="avayaar-multi-hint">تا ۲ گزینه</p>' + optionGrid(opts) +
+            '<button id="avayaar-deepen-next" class="avayaar-entry-cta"><span>ادامه</span>' + arrowIcon() + '</button>';
+        render(personalityShell(8, html));
+        bindMultiSelect('.avayaar-choice-card', 2, function(picked) { state.chapterPersonality.deepenWhy = picked; });
+        document.getElementById('avayaar-deepen-next').addEventListener('click', personalityIdentity);
+    }
+
+    // Screen 57
+    function personalityIdentity() {
+        var opts = data.identityOptions || [];
+        render(personalityShell(9, '<p class="avayaar-chapter-heading">اگر موسیقی قرار بود بخشی از شخصیتت باشه، دوست داشتی کدوم باشه؟</p>' + optionGrid(opts)));
+        bindChoiceCards(function(val) { state.chapterPersonality.identity = val; setTimeout(personalityDecisionStyle, 350); });
+    }
+
+    // Screen 58
+    function personalityDecisionStyle() {
+        var opts = data.decisionStyle || [];
+        render(personalityShell(10, '<p class="avayaar-chapter-heading">وقتی بین دو گزینه مرددی…</p>' + optionGrid(opts)));
+        bindChoiceCards(function(val) { state.chapterPersonality.decisionStyle = val; setTimeout(personalityDiscovery, 350); });
+    }
+
+    // Screen 59
+    function personalityDiscovery() {
+        var opts = data.discoveryOptions || [];
+        render(personalityShell(11, '<p class="avayaar-chapter-heading">اگر یک ساز کاملاً جدید ببینی…</p>' + optionGrid(opts)));
+        bindChoiceCards(function(val) { state.chapterPersonality.discovery = val; setTimeout(personalityEmotionalConn, 350); });
+    }
+
+    // Screen 60
+    function personalityEmotionalConn() {
+        var t = trackById('track5');
+        render(personalityShell(12, '<p class="avayaar-chapter-heading">وقتی موسیقی واقعاً بهت می‌چسبه، معمولاً…</p><div class="avayaar-track-player">' + playableCard(t.file) + '</div>'));
+        document.querySelector('.avayaar-track-dot').addEventListener('click', function() { playClipAudio(t.file); showEmotionalConnOptions(); });
+        setTimeout(showEmotionalConnOptions, 2500);
+    }
+    function showEmotionalConnOptions() {
+        if (document.getElementById('avayaar-ec-choices')) return;
+        var opts = data.emotionalConn || [];
+        var wrap = document.querySelector('.avayaar-personality-shell');
+        var html = '<div id="avayaar-ec-choices">' + optionGrid(opts) + '</div>';
+        wrap.insertAdjacentHTML('beforeend', html);
+        bindChoiceCards(function(val) { state.chapterPersonality.emotionalConn = val; setTimeout(personalityYourChoice, 350); });
+    }
+
+    // Screen 61 — derive 3 candidate traits from answers so far
+    function deriveTraits() {
+        var p = state.chapterPersonality;
+        var map = {
+            persist: 'persistent', switch: 'explorer', pivot: 'analytical',
+            excited: 'expressive', avoid: 'patient', structure: 'structured', freedom: 'explorer',
+            immerse: 'emotional', analyze: 'analytical', try: 'curious', see: 'curious', hear: 'curious'
+        };
+        var candidates = [map[p.patience], map[p.stage], map[p.rulesFreedom], map[p.learning], map[p.emotionalConn]].filter(Boolean);
+        var pool = data.traitPool || {};
+        var uniq = [];
+        candidates.forEach(function(t) { if (uniq.indexOf(t) === -1) uniq.push(t); });
+        while (uniq.length < 3) {
+            var keys = Object.keys(pool);
+            var pick = keys[Math.floor(Math.random() * keys.length)];
+            if (uniq.indexOf(pick) === -1) uniq.push(pick);
+        }
+        return uniq.slice(0, 3);
+    }
+
+    function personalityYourChoice() {
+        var traits = deriveTraits();
+        var pool = data.traitPool || {};
+        var nodes = traits.map(function(t) { return { id: t, label: pool[t] || t, selectable: true }; });
+        render(
+            '<div class="avayaar-chapter-shell avayaar-personality-shell">' +
+            orbitVisual(nodes) +
+            '<p class="avayaar-chapter-heading">تا اینجا، انتخاب‌هات یه تصویر جالب ساخته.</p>' +
+            '<p class="avayaar-chapter-sub">کدومش بیشتر شبیه خودته؟</p>' +
+            '</div>'
+        );
+        Array.prototype.forEach.call(document.querySelectorAll('.avayaar-orbit-node.is-selectable'), function(node) {
+            node.addEventListener('click', function() {
+                Array.prototype.forEach.call(document.querySelectorAll('.avayaar-orbit-node'), function(n) { n.classList.remove('is-selected'); });
+                node.classList.add('is-selected');
+                state.chapterPersonality.selfTrait = node.getAttribute('data-val');
+                setTimeout(personalityWildcard, 500);
+            });
+        });
+    }
+
+    // Screen 62
+    function personalityWildcard() {
+        render(personalityShell(13,
+            '<p class="avayaar-chapter-heading">بدون فکر کردن…</p>' +
+            '<div class="avayaar-ab-row">' +
+            '<button type="button" class="avayaar-choice-card" data-key="0">' + svgIcon('spark', 20) + '<span>این</span></button>' +
+            '<button type="button" class="avayaar-choice-card" data-key="1">' + svgIcon('heart', 20) + '<span>یا این؟</span></button>' +
+            '</div>'
+        ));
+        bindPreviewSelect('.avayaar-choice-card', function(key) { playTone(key === '0' ? 392 : 523, 0.3, getAudioCtx().currentTime + 0.03); }, function(key) {
+            state.chapterPersonality.wildcard = key; setTimeout(personalityReflection, 400);
+        });
+    }
+
+    // Screen 63
+    function personalityReflection() {
+        var traits = deriveTraits();
+        var pool = data.traitPool || {};
+        var nodes = traits.map(function(t) { return { id: t, label: pool[t] || t, selected: t === state.chapterPersonality.selfTrait }; });
+        render(
+            '<div class="avayaar-chapter-shell avayaar-personality-shell">' +
+            orbitVisual(nodes) +
+            '<p class="avayaar-chapter-heading">انتخاب‌هات دارن یک الگو می‌سازن.</p>' +
+            '<p class="avayaar-chapter-sub">اما هنوز یک چیز مونده…</p>' +
+            '</div>'
+        );
+        setTimeout(personalityFinalWildcard, 2200);
+    }
+
+    // Screen 64
+    function personalityFinalWildcard() {
+        render(personalityShell(14,
+            '<p class="avayaar-chapter-heading">موسیقی رو ترجیح می‌دی…</p>' +
+            '<div class="avayaar-ab-row">' +
+            '<button type="button" class="avayaar-choice-card" data-val="discover">' + svgIcon('headphones', 22) + '<span>کشف کنی</span></button>' +
+            '<button type="button" class="avayaar-choice-card" data-val="create">' + svgIcon('mic', 22) + '<span>بسازی</span></button>' +
+            '</div>'
+        ));
+        bindChoiceCards(function(val) { state.chapterPersonality.finalWildcard = val; setTimeout(personalityToBridgeTransition, 350); });
+    }
+
+    // Bridge into the existing Mood → Lead Form → Result flow.
+    // Chapter 05 ("Final Discovery") and the redesigned Result screens
+    // are not built yet — the spec for them wasn't screen-by-screen like
+    // the others, so nothing was invented here. This bridge keeps the
+    // quiz fully functional end-to-end until that spec arrives.
+    function personalityToBridgeTransition() {
+        render('<div class="avayaar-transition"><p class="avayaar-transition-text avayaar-transition-emphasis">یک مرحله‌ی آخر مونده.</p></div>');
+        setTimeout(startMoodStage, 1600);
+    }
+
+    // ---------- Old Mood → Result flow (temporary bridge — see note above) ----------
     function startMoodStage() {
         var moods = data.mood;
-        var html = progressBar() + '<div class="avayaar-card"><div class="avayaar-stage-label">مرحله ۵ · حال‌وهوا 🌈</div><p>کدوم حس بیشتر بهت نزدیکه؟</p><div class="avayaar-mood-grid">';
+        var html = progressBar() + '<div class="avayaar-card"><div class="avayaar-stage-label">حال‌وهوا</div><p>کدوم حس بیشتر بهت نزدیکه؟</p><div class="avayaar-mood-grid">';
         moods.forEach(function(m) { html += '<button class="avayaar-mood-tile avayaar-mood-' + m.id + '" data-id="' + m.id + '"><span>' + m.emoji + '</span>' + m.label + '</button>'; });
         html += '</div></div>';
         render(html);
