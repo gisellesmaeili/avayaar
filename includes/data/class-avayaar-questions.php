@@ -100,17 +100,37 @@ class Avayaar_Questions {
         );
     }
 
+    // Real instruments — queries the mam_instrument CPT, filtered to any
+    // post tagged under one of the family term IDs already defined in
+    // Avayaar_Recommendations::get_family_term_ids(). Same taxonomy you
+    // already use for recommendations, just queried directly here.
     public static function get_instrument_options() {
-        return array(
-            array( 'id' => 'piano',  'label' => 'پیانو' ),
-            array( 'id' => 'guitar', 'label' => 'گیتار' ),
-            array( 'id' => 'violin', 'label' => 'ویولن' ),
-            array( 'id' => 'santur', 'label' => 'سنتور' ),
-            array( 'id' => 'tar',    'label' => 'تار' ),
-            array( 'id' => 'drums',  'label' => 'درامز' ),
-            array( 'id' => 'vocal',  'label' => 'آواز' ),
-            array( 'id' => 'other',  'label' => 'سازی دیگه' ),
-        );
+        if ( ! post_type_exists( 'mam_instrument' ) ) {
+            return array();
+        }
+
+        $term_ids = array_values( Avayaar_Recommendations::get_family_term_ids() );
+
+        $posts = get_posts( array(
+            'post_type'   => 'mam_instrument',
+            'post_status' => 'publish',
+            'numberposts' => -1,
+            'orderby'     => 'title',
+            'order'       => 'ASC',
+            'tax_query'   => array( array(
+                'taxonomy' => Avayaar_Recommendations::TAXONOMY,
+                'field'    => 'term_id',
+                'terms'    => $term_ids,
+            ) ),
+        ) );
+
+        $options = array();
+        foreach ( $posts as $p ) {
+            $options[] = array( 'id' => $p->ID, 'label' => get_the_title( $p ) );
+        }
+        $options[] = array( 'id' => 'other', 'label' => 'سازی دیگه' );
+
+        return $options;
     }
 
     public static function get_why_music_options() {
@@ -122,6 +142,85 @@ class Avayaar_Questions {
             array( 'id' => 'career',     'label' => 'برای مسیر حرفه‌ای' ),
             array( 'id' => 'focus',      'label' => 'برای رشد و تمرکز' ),
             array( 'id' => 'unsure',     'label' => 'هنوز نمی‌دونم' ),
+        );
+    }
+
+    // ---------- Chapter 01 — Rhythm question bank (Screens 06–13) ----------
+    // Small pools for now — expand each array to grow variety; the
+    // adaptive "pick 4–5 from a pool of 20" selector is a future step.
+    public static function get_rhythm_bank() {
+        return array(
+            'speed_pairs' => array(
+                array( 'id' => 'sp1', 'a' => array( 'bpm' => 70, 'pattern' => array( 1, 1, 1, 1 ) ), 'b' => array( 'bpm' => 150, 'pattern' => array( 1, 1, 1, 1 ) ) ),
+            ),
+            'memory_sets' => array(
+                array(
+                    'id'      => 'ms1',
+                    'target'  => array( 'bpm' => 95, 'pattern' => array( 1, 0.5, 0.5, 1, 1 ) ),
+                    'options' => array(
+                        array( 'key' => 'A', 'bpm' => 95, 'pattern' => array( 1, 0.5, 0.5, 1, 1 ) ),
+                        array( 'key' => 'B', 'bpm' => 95, 'pattern' => array( 0.5, 0.5, 1, 1, 1 ) ),
+                        array( 'key' => 'C', 'bpm' => 95, 'pattern' => array( 1, 1, 0.5, 0.5, 1 ) ),
+                    ),
+                ),
+            ),
+            'missing_beat' => array(
+                array( 'id' => 'mb1', 'bpm' => 100, 'units' => array( 1, 1, 1, 1, 1 ), 'missing_index' => 2 ),
+            ),
+            'energy_choice' => array(
+                array( 'key' => 'A', 'bpm' => 80, 'pattern' => array( 1, 1, 1, 1 ) ),
+                array( 'key' => 'B', 'bpm' => 120, 'pattern' => array( 0.5, 0.5, 1, 0.5, 0.5, 1 ) ),
+                array( 'key' => 'C', 'bpm' => 100, 'pattern' => array( 1, 0.5, 0.5, 1, 1 ) ),
+            ),
+            'sync' => array( 'bpm' => 90, 'beats' => 6 ),
+            'personality_pair' => array(
+                'a' => array( 'bpm' => 85, 'pattern' => array( 1, 1, 1, 1 ) ),
+                'b' => array( 'bpm' => 115, 'pattern' => array( 0.5, 0.5, 1, 0.5, 1 ) ),
+            ),
+            'final_challenge' => array( 'bpm' => 100, 'pattern' => array( 1, 0.5, 0.5, 1, 0.5, 0.5, 1.5 ) ),
+        );
+    }
+
+    // ---------- Chapter 02 — Your Ears question bank (Screens 15–30) ----------
+    // Frequencies are approximate note values (Hz) — no audio files needed,
+    // everything is synthesized client-side via Web Audio.
+    public static function get_ear_bank() {
+        return array(
+            'low_high'        => array( 'a' => 330, 'b' => 660 ),
+            'triplet_middle'  => array( 'freqs' => array( 392, 659, 494 ) ),
+            'similarity_pair' => array( 'a' => 440, 'b' => 466 ),
+            'odd_one'         => array( 'base' => 523, 'odd' => 587, 'odd_index' => 2 ),
+            'direction'       => array( 'from' => 500, 'pan_from' => -1 ),
+            'note_count'      => array( 'freqs' => array( 392, 440, 494, 523 ) ),
+            'melody_direction'=> array( 'freqs' => array( 330, 392, 440, 523 ) ),
+            'mode_pieces'     => array(
+                'a' => array( 523, 622, 659, 784 ),
+                'b' => array( 523, 587, 659, 698 ),
+            ),
+            'sound_memory' => array(
+                'target'  => array( 392, 440, 523 ),
+                'options' => array(
+                    array( 392, 440, 523 ),
+                    array( 392, 494, 523 ),
+                    array( 440, 494, 587 ),
+                ),
+            ),
+            'preference' => array(
+                'options' => array(
+                    array( 330, 392, 440 ),
+                    array( 440, 523, 659 ),
+                    array( 294, 349, 392 ),
+                ),
+            ),
+            'final_melody' => array(
+                'target'  => array( 392, 440, 494, 587, 659 ),
+                'options' => array(
+                    array( 392, 440, 494, 587, 659 ),
+                    array( 392, 349, 494, 440, 659 ),
+                    array( 330, 440, 494, 587, 698 ),
+                    array( 392, 440, 523, 587, 659 ),
+                ),
+            ),
         );
     }
 }

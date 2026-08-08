@@ -35,6 +35,8 @@ class Avayaar_Shortcode {
             'musicHistory' => Avayaar_Questions::get_music_history_options(),
             'instruments'  => Avayaar_Questions::get_instrument_options(),
             'whyMusic'     => Avayaar_Questions::get_why_music_options(),
+            'rhythmBank'   => Avayaar_Questions::get_rhythm_bank(),
+            'earBank'      => Avayaar_Questions::get_ear_bank(),
             'audioBaseUrl' => AVAYAAR_URL . 'assets/audio/',
         ) );
 

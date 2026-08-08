@@ -22,7 +22,9 @@
         personalityAnswers: {},
         moodAnswer: null,
         audioCtx: null,
-        user: { name: '', age: null, history: null, instruments: [], why: null }
+        user: { name: '', age: null, history: null, instruments: [], why: null },
+        chapterRhythm: { regularity: null, speed: null, memory: null, missingBeat: null, energy: null, sync: [], personality: null, finalTap: null },
+        chapterEars: { lowHigh: null, tripletMiddle: null, similarity: null, oddOne: null, direction: null, pitchMove: null, noteCount: null, melodyDirection: null, mood: null, modeCompare: {}, emotionalScene: null, timbre: null, instrumentChar: null, soundMemory: null, preference: null, finalMelody: null }
     };
 
     function getAudioCtx() {
@@ -86,9 +88,77 @@
         return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || ICONS.spark) + '</svg>';
     }
 
-    function meetYouProgress(step, total) {
+    function chapterProgress(label, step, total) {
         var pct = Math.round((step / total) * 100);
-        return '<div class="avayaar-chapter-head"><span class="avayaar-chapter-label">آشنایی با تو</span><div class="avayaar-chapter-track"><div class="avayaar-chapter-fill" style="width:' + pct + '%"></div></div></div>';
+        return '<div class="avayaar-chapter-head"><span class="avayaar-chapter-label">' + label + '</span><div class="avayaar-chapter-track"><div class="avayaar-chapter-fill" style="width:' + pct + '%"></div></div></div>';
+    }
+
+    function meetYouProgress(step, total) { return chapterProgress('آشنایی با تو', step, total); }
+    function rhythmShell(step, innerHtml) { return chapterProgress('ریتم', step, 8) + '<div class="avayaar-chapter-shell avayaar-rhythm-shell">' + innerHtml + '</div>'; }
+    function earsShell(step, innerHtml) { return chapterProgress('گوش‌هات', step, 17) + '<div class="avayaar-chapter-shell avayaar-ears-shell">' + innerHtml + '</div>'; }
+
+    function bindChoiceCards(onPick, selector) {
+        Array.prototype.forEach.call(document.querySelectorAll(selector || '.avayaar-choice-card'), function(btn) {
+            btn.addEventListener('click', function() {
+                btn.classList.add('is-selected');
+                onPick(btn.getAttribute('data-val') || btn.getAttribute('data-key') || btn.getAttribute('data-id'));
+            });
+        });
+    }
+
+    // Tap once to preview/replay any option, tap the SAME option again to confirm and move on.
+    function bindPreviewSelect(selector, playFn, onSelect) {
+        Array.prototype.forEach.call(document.querySelectorAll(selector), function(btn) {
+            btn.addEventListener('click', function() {
+                var key = btn.getAttribute('data-key');
+                playFn(key, btn);
+                if (btn.classList.contains('is-armed')) {
+                    btn.classList.add('is-selected');
+                    onSelect(key);
+                } else {
+                    Array.prototype.forEach.call(document.querySelectorAll(selector), function(b) { b.classList.remove('is-armed'); });
+                    btn.classList.add('is-armed');
+                }
+            });
+        });
+    }
+
+    function playTone(freq, duration, atTime, type) {
+        var ctx = getAudioCtx();
+        var osc = ctx.createOscillator(), gain = ctx.createGain();
+        osc.type = type || 'sine';
+        osc.frequency.setValueAtTime(freq, atTime);
+        gain.gain.setValueAtTime(0.0001, atTime);
+        gain.gain.exponentialRampToValueAtTime(0.28, atTime + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0001, atTime + duration);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(atTime); osc.stop(atTime + duration + 0.05);
+    }
+
+    function playToneSlide(freqFrom, freqTo, duration, atTime) {
+        var ctx = getAudioCtx();
+        var osc = ctx.createOscillator(), gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freqFrom, atTime);
+        osc.frequency.linearRampToValueAtTime(freqTo, atTime + duration);
+        gain.gain.setValueAtTime(0.0001, atTime);
+        gain.gain.exponentialRampToValueAtTime(0.28, atTime + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.0001, atTime + duration);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(atTime); osc.stop(atTime + duration + 0.05);
+    }
+
+    function playStereoTone(freq, duration, pan, atTime) {
+        var ctx = getAudioCtx();
+        var osc = ctx.createOscillator(), gain = ctx.createGain();
+        var panner = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+        osc.type = 'sine'; osc.frequency.setValueAtTime(freq, atTime);
+        gain.gain.setValueAtTime(0.0001, atTime);
+        gain.gain.exponentialRampToValueAtTime(0.28, atTime + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.0001, atTime + duration);
+        if (panner) { panner.pan.setValueAtTime(pan, atTime); osc.connect(gain).connect(panner).connect(ctx.destination); }
+        else { osc.connect(gain).connect(ctx.destination); }
+        osc.start(atTime); osc.stop(atTime + duration + 0.05);
     }
 
     function playMicroSound() {
@@ -119,7 +189,7 @@
         state.stage++;
         var toast = document.createElement('div');
         toast.className = 'avayaar-toast';
-        toast.textContent = 'عالی بود! ✨';
+        toast.innerHTML = svgIcon('spark', 14) + ' عالی بود!';
         root.appendChild(toast);
         setTimeout(function() { next(); }, 500);
     }
@@ -323,44 +393,8 @@
         render('<div class="avayaar-transition"><p class="avayaar-transition-text">حالا که با تو آشنا شدیم…</p></div>');
         setTimeout(function() {
             render('<div class="avayaar-transition"><p class="avayaar-transition-text avayaar-transition-emphasis">ببینیم ریتمت چطوره.</p></div>');
-            // Chapter 01 — Rhythm (Screens 03–13) is built next.
+            setTimeout(renderRhythmIntro, 1400);
         }, 1600);
-    }
-
-    // ---------- Stage 1: Musical Ear ----------
-    function startEarStage() {
-        var ear = data.ear;
-        render(progressBar() +
-            '<div class="avayaar-card"><div class="avayaar-stage-label">مرحله ۱ · گوش موسیقی 🎧</div>' +
-            '<p>گوش کن...</p><div id="avayaar-pulse" class="avayaar-pulse"></div></div>'
-        );
-        playPattern(ear.tempo_clip, function() {
-            var p = document.getElementById('avayaar-pulse');
-            if (p) { p.classList.add('active'); setTimeout(function() { p.classList.remove('active'); }, 100); }
-        }, function() { askTempo(ear); });
-    }
-
-    function askTempo(ear) {
-        var opts = ear.tempo_question.options;
-        var html = progressBar() + '<div class="avayaar-card"><div class="avayaar-stage-label">مرحله ۱ · گوش موسیقی 🎧</div><p>' + ear.tempo_question.text + '</p><div class="avayaar-options">';
-        Object.keys(opts).forEach(function(k) { html += '<button data-val="' + k + '" class="avayaar-btn">' + opts[k] + '</button>'; });
-        html += '</div></div>';
-        render(html);
-        Array.prototype.forEach.call(document.querySelectorAll('.avayaar-options button'), function(btn) {
-            btn.addEventListener('click', function() {
-                state.earAnswers.tempo = btn.getAttribute('data-val');
-                playRegularityClips(ear);
-            });
-        });
-    }
-
-    function playRegularityClips(ear) {
-        render(progressBar() + '<div class="avayaar-card"><div class="avayaar-stage-label">مرحله ۱ · گوش موسیقی 🎧</div><p>دو ریتم رو گوش کن...</p><div id="avayaar-pulse" class="avayaar-pulse"></div></div>');
-        playPattern(ear.regularity_clips.a, pulseFx, function() {
-            setTimeout(function() {
-                playPattern(ear.regularity_clips.b, pulseFx, function() { askRegularity(ear); });
-            }, 400);
-        });
     }
 
     function pulseFx() {
@@ -368,26 +402,36 @@
         if (p) { p.classList.add('active'); setTimeout(function() { p.classList.remove('active'); }, 100); }
     }
 
-    function askRegularity(ear) {
-        var opts = ear.regularity_question.options;
-        var html = progressBar() + '<div class="avayaar-card"><div class="avayaar-stage-label">مرحله ۱ · گوش موسیقی 🎧</div><p>' + ear.regularity_question.text + '</p><div class="avayaar-options">';
-        Object.keys(opts).forEach(function(k) { html += '<button data-val="' + k + '" class="avayaar-btn">' + opts[k] + '</button>'; });
-        html += '</div></div>';
-        render(html);
-        Array.prototype.forEach.call(document.querySelectorAll('.avayaar-options button'), function(btn) {
-            btn.addEventListener('click', function() {
-                state.earAnswers.regularity = btn.getAttribute('data-val');
-                stageComplete(startRhythmStage);
-            });
+    // ---------- Chapter 01 — Rhythm: Screen 03 (Intro) ----------
+    function renderRhythmIntro() {
+        render(
+            '<div class="avayaar-chapter-shell avayaar-rhythm-shell">' +
+            '<div class="avayaar-pulse avayaar-pulse-solo" id="avayaar-intro-pulse"></div>' +
+            '<h2 class="avayaar-chapter-heading">اول، ریتم.</h2>' +
+            '<p class="avayaar-chapter-sub">قبل از اینکه موسیقی رو بشنوی،<br>می‌تونی ریتمش رو حس کنی.</p>' +
+            '<button id="avayaar-rhythm-start" class="avayaar-entry-cta"><span>شروع کنیم</span>' + arrowIcon() + '</button>' +
+            '</div>'
+        );
+        [0, 500, 1000].forEach(function(ms) {
+            setTimeout(function() {
+                playTone(660, 0.12, getAudioCtx().currentTime + 0.02);
+                var p = document.getElementById('avayaar-intro-pulse');
+                if (p) { p.classList.add('active'); setTimeout(function() { p.classList.remove('active'); }, 150); }
+            }, ms);
+        });
+        document.getElementById('avayaar-rhythm-start').addEventListener('click', function() {
+            state.rhythmIndex = 0;
+            state.rhythmTier = 1;
+            startRhythmStage();
         });
     }
 
-    // ---------- Stage 2: Rhythm Imitation ----------
+    // ---------- Chapter 01 — Rhythm: Screens 04/05 (Listen + Tap, adaptive tiers) ----------
     function startRhythmStage() {
-        if (state.rhythmIndex >= RHYTHM_ROUNDS) return stageComplete(startStyleStage);
+        if (state.rhythmIndex >= RHYTHM_ROUNDS) return stageComplete(rhythmRegularityScreen);
         var pool = data.rhythm[state.rhythmTier] || data.rhythm[1];
         var pattern = pool[Math.floor(Math.random() * pool.length)];
-        render(progressBar() + '<div class="avayaar-card"><div class="avayaar-stage-label">مرحله ۲ · تقلید ریتم 👏 (' + (state.rhythmIndex + 1) + '/' + RHYTHM_ROUNDS + ')</div><p>گوش بده...</p><div id="avayaar-pulse" class="avayaar-pulse"></div></div>');
+        render(rhythmShell(0, '<p class="avayaar-chapter-heading">گوش بده…</p><div id="avayaar-pulse" class="avayaar-pulse avayaar-pulse-solo"></div>'));
         playPattern(pattern, pulseFx, function() { recordRhythm(pattern); });
     }
 
@@ -396,7 +440,7 @@
         var expected = [], cumulative = 0;
         pattern.pattern.forEach(function(u) { expected.push(cumulative); cumulative += u * beatMs; });
 
-        render(progressBar() + '<div class="avayaar-card"><div class="avayaar-stage-label">مرحله ۲ · تقلید ریتم 👏</div><p>حالا نوبت توئه!</p><button id="avayaar-tap" class="avayaar-tap-btn">بزن 👏</button></div>');
+        render(rhythmShell(0, '<p class="avayaar-chapter-heading">حالا نوبت توئه!</p><button id="avayaar-tap" class="avayaar-tap-btn">بزن</button>'));
 
         var start = null, taps = [], done = false;
         document.getElementById('avayaar-tap').addEventListener('click', function() {
@@ -422,6 +466,486 @@
         else if (avgAbs > 250 && state.rhythmTier > 1) state.rhythmTier--;
         state.rhythmIndex++;
         setTimeout(startRhythmStage, 300);
+    }
+
+    // ---------- Chapter 01 — Rhythm: Screen 06 (Regularity) ----------
+    function rhythmRegularityScreen() {
+        var ear = data.ear;
+        render(rhythmShell(1, '<p class="avayaar-chapter-heading">گوش کن…</p><div class="avayaar-pulse" id="avayaar-pulse"></div>'));
+        playPattern(ear.regularity_clips.a, pulseFx, function() {
+            setTimeout(function() {
+                playPattern(ear.regularity_clips.b, pulseFx, function() { showRegularityChoices(); });
+            }, 400);
+        });
+    }
+    function showRegularityChoices() {
+        var opts = data.ear.regularity_question.options;
+        render(rhythmShell(1,
+            '<p class="avayaar-chapter-heading">کدوم رو بیشتر منظم حس کردی؟</p>' +
+            '<div class="avayaar-ab-row">' +
+            '<button type="button" class="avayaar-choice-card" data-val="a">' + opts.a + '</button>' +
+            '<button type="button" class="avayaar-choice-card" data-val="b">' + opts.b + '</button>' +
+            '</div>'
+        ));
+        bindChoiceCards(function(val) { state.chapterRhythm.regularity = val; setTimeout(rhythmSpeedScreen, 350); });
+    }
+
+    // ---------- Screen 07 (Speed) ----------
+    function rhythmSpeedScreen() {
+        var pair = (data.rhythmBank.speed_pairs || [])[0];
+        render(rhythmShell(2, '<p class="avayaar-chapter-heading">گوش کن…</p><div class="avayaar-pulse" id="avayaar-pulse"></div>'));
+        playPattern(pair.a, pulseFx, function() {
+            setTimeout(function() { playPattern(pair.b, pulseFx, function() { showSpeedChoices(); }); }, 400);
+        });
+    }
+    function showSpeedChoices() {
+        render(rhythmShell(2,
+            '<p class="avayaar-chapter-heading">کدوم ریتم سریع‌تر بود؟</p>' +
+            '<div class="avayaar-ab-row"><button type="button" class="avayaar-choice-card" data-val="a">A</button><button type="button" class="avayaar-choice-card" data-val="b">B</button></div>'
+        ));
+        bindChoiceCards(function(val) { state.chapterRhythm.speed = val; setTimeout(rhythmMemoryScreen, 350); });
+    }
+
+    // ---------- Screen 08 (Memory) ----------
+    function rhythmMemoryScreen() {
+        var set = (data.rhythmBank.memory_sets || [])[0];
+        render(rhythmShell(3, '<p class="avayaar-chapter-heading">خوب گوش کن…</p><div class="avayaar-pulse" id="avayaar-pulse"></div>'));
+        playPattern(set.target, pulseFx, function() { showMemoryChoices(set); });
+    }
+    function showMemoryChoices(set) {
+        var html = '<p class="avayaar-chapter-heading">کدوم الگو رو شنیدی؟</p><div class="avayaar-ab-row">';
+        set.options.forEach(function(o) { html += '<button type="button" class="avayaar-choice-card" data-val="' + o.key + '">' + o.key + '</button>'; });
+        html += '</div>';
+        render(rhythmShell(3, html));
+        bindChoiceCards(function(val) { state.chapterRhythm.memory = val; setTimeout(rhythmMissingBeatScreen, 350); });
+    }
+
+    // ---------- Screen 09 (Missing Beat) ----------
+    function rhythmMissingBeatScreen() {
+        var cfg = (data.rhythmBank.missing_beat || [])[0];
+        render(rhythmShell(4, '<p class="avayaar-chapter-heading">گوش کن…</p><div class="avayaar-pulse" id="avayaar-pulse"></div>'));
+        var ctx = getAudioCtx();
+        var beatMs = 60000 / cfg.bpm;
+        var t = ctx.currentTime + 0.3;
+        cfg.units.forEach(function(u, i) {
+            if (i !== cfg.missing_index) {
+                playTone(700, 0.1, t);
+                (function(delayMs) { setTimeout(pulseFx, delayMs); })((t - ctx.currentTime) * 1000);
+            }
+            t += u * (beatMs / 1000);
+        });
+        setTimeout(function() { showMissingBeatChoices(cfg); }, (t - ctx.currentTime) * 1000 + 300);
+    }
+    function showMissingBeatChoices(cfg) {
+        var html = '<p class="avayaar-chapter-heading">ضرب گمشده کجا بود؟</p><div class="avayaar-missing-beat-row">';
+        cfg.units.forEach(function(u, i) { html += '<button type="button" class="avayaar-missing-beat-dot" data-i="' + i + '">' + (i + 1) + '</button>'; });
+        html += '</div>';
+        render(rhythmShell(4, html));
+        Array.prototype.forEach.call(document.querySelectorAll('.avayaar-missing-beat-dot'), function(btn) {
+            btn.addEventListener('click', function() {
+                btn.classList.add('is-selected');
+                state.chapterRhythm.missingBeat = btn.getAttribute('data-i');
+                setTimeout(rhythmEnergyScreen, 400);
+            });
+        });
+    }
+
+    // ---------- Screen 10 (Energy — subjective) ----------
+    function rhythmEnergyScreen() {
+        var opts = data.rhythmBank.energy_choice || [];
+        var html = '<p class="avayaar-chapter-heading">کدوم ریتم بیشتر بهت انرژی می‌ده؟</p><div class="avayaar-ab-row">';
+        opts.forEach(function(o) { html += '<button type="button" class="avayaar-choice-card" data-key="' + o.key + '">' + svgIcon('spark', 22) + '<span>گزینه ' + o.key + '</span></button>'; });
+        html += '</div>';
+        render(rhythmShell(5, html));
+        bindPreviewSelect('.avayaar-choice-card', function(key) {
+            var opt = opts.filter(function(o) { return o.key === key; })[0];
+            playPattern(opt, pulseFx, function() {});
+        }, function(key) { state.chapterRhythm.energy = key; setTimeout(rhythmSyncScreen, 400); });
+    }
+
+    // ---------- Screen 11 (Body sync) ----------
+    function rhythmSyncScreen() {
+        var cfg = data.rhythmBank.sync || { bpm: 90, beats: 6 };
+        render(rhythmShell(6, '<p class="avayaar-chapter-heading">فقط با ضربه‌هات جواب بده.</p><p class="avayaar-chapter-sub">همراه ریتم ضربه بزن…</p><div class="avayaar-pulse" id="avayaar-pulse"></div>'));
+        var ctx = getAudioCtx();
+        var beatMs = 60000 / cfg.bpm;
+        var t = ctx.currentTime + 0.3;
+        for (var i = 0; i < cfg.beats; i++) {
+            playTone(600, 0.09, t);
+            (function(delayMs) { setTimeout(pulseFx, delayMs); })((t - ctx.currentTime) * 1000);
+            t += beatMs / 1000;
+        }
+        setTimeout(function() { showSyncTapZone(cfg); }, (t - ctx.currentTime) * 1000 + 200);
+    }
+    function showSyncTapZone(cfg) {
+        render(rhythmShell(6, '<p class="avayaar-chapter-heading">حالا ریتم رو خودت ادامه بده…</p><button id="avayaar-sync-tap" class="avayaar-tap-btn">ضربه</button>'));
+        var taps = [], start = null;
+        document.getElementById('avayaar-sync-tap').addEventListener('click', function() {
+            var now = performance.now();
+            if (start === null) start = now;
+            taps.push(now - start);
+            if (taps.length >= cfg.beats) { state.chapterRhythm.sync = taps; setTimeout(rhythmPersonalityScreen, 400); }
+        });
+    }
+
+    // ---------- Screen 12 (Personality pair) ----------
+    function rhythmPersonalityScreen() {
+        var pair = data.rhythmBank.personality_pair || {};
+        var html = '<p class="avayaar-chapter-heading">کدوم یکی بیشتر شبیه توئه؟</p><div class="avayaar-ab-row">' +
+            '<button type="button" class="avayaar-choice-card" data-key="a">A</button>' +
+            '<button type="button" class="avayaar-choice-card" data-key="b">B</button></div>';
+        render(rhythmShell(7, html));
+        bindPreviewSelect('.avayaar-choice-card', function(key) { playPattern(pair[key], pulseFx, function() {}); }, function(key) {
+            state.chapterRhythm.personality = key; setTimeout(rhythmFinalScreen, 400);
+        });
+    }
+
+    // ---------- Screen 13 (Final challenge) ----------
+    function rhythmFinalScreen() {
+        var pattern = data.rhythmBank.final_challenge || { bpm: 100, pattern: [1, 0.5, 0.5, 1] };
+        render(rhythmShell(8, '<p class="avayaar-chapter-heading">این یکی رو خوب گوش کن.</p><div class="avayaar-pulse" id="avayaar-pulse"></div>'));
+        playPattern(pattern, pulseFx, function() { rhythmFinalTap(pattern); });
+    }
+    function rhythmFinalTap(pattern) {
+        var beatMs = 60000 / pattern.bpm;
+        var expected = [], cumulative = 0;
+        pattern.pattern.forEach(function(u) { expected.push(cumulative); cumulative += u * beatMs; });
+        render(rhythmShell(8, '<p class="avayaar-chapter-heading">حالا با ریتم خودت تکرارش کن.</p><button id="avayaar-final-tap" class="avayaar-tap-btn">بزن</button>'));
+        var start = null, taps = [], done = false;
+        document.getElementById('avayaar-final-tap').addEventListener('click', function() {
+            if (done) return;
+            var now = performance.now();
+            if (start === null) start = now;
+            taps.push(now - start);
+            if (taps.length >= expected.length) { done = true; finishRhythmFinal(expected, taps); }
+        });
+        setTimeout(function() {
+            if (done) return;
+            done = true;
+            while (taps.length < expected.length) taps.push((start || performance.now()) + 9999);
+            finishRhythmFinal(expected, taps);
+        }, cumulative + 3000);
+    }
+    function finishRhythmFinal(expected, taps) {
+        state.chapterRhythm.finalTap = expected.map(function(e, i) { return Math.max(-999, Math.min(999, taps[i] - e)); });
+        render(rhythmShell(8, '<p class="avayaar-chapter-heading">ریتمت ثبت شد.</p>'));
+        setTimeout(rhythmToEarsTransition, 900);
+    }
+
+    // ---------- Rhythm → Ears transition ----------
+    function rhythmToEarsTransition() {
+        render(
+            '<div class="avayaar-transition">' +
+            '<div class="avayaar-transition-visual"><div class="avayaar-ripple"></div>' +
+            '<svg class="avayaar-wave-morph" viewBox="0 0 300 60" preserveAspectRatio="none">' +
+            '<path d="M0,30 C25,10 50,50 75,30 C100,10 125,50 150,30 C175,10 200,50 225,30 C250,10 275,50 300,30" stroke="#F16923" stroke-width="2" fill="none"/>' +
+            '</svg></div>' +
+            '<p class="avayaar-transition-text avayaar-transition-emphasis">حالا نوبت گوشاته.</p>' +
+            '<p class="avayaar-transition-step" data-i="1" style="opacity:1">ریتم رو حس کردیم. حالا ببینیم جزئیات صدا رو چطور می‌شنوی.</p>' +
+            '</div>'
+        );
+        setTimeout(earsIntro, 2200);
+    }
+
+    // ================= CHAPTER 02 — YOUR EARS (Screens 14–30) =================
+
+    function earsIntro() {
+        render(
+            '<div class="avayaar-chapter-shell avayaar-ears-shell">' +
+            '<div class="avayaar-wave-bars"><span></span><span></span><span></span><span></span><span></span></div>' +
+            '<h2 class="avayaar-chapter-heading">گوش‌هات چی می‌شنون؟</h2>' +
+            '<p class="avayaar-chapter-sub">حالا می‌خوایم کمی دقیق‌تر گوش کنیم.</p>' +
+            '<button id="avayaar-ears-start" class="avayaar-entry-cta"><span>شروع کنیم</span>' + arrowIcon() + '</button>' +
+            '</div>'
+        );
+        document.getElementById('avayaar-ears-start').addEventListener('click', earsLowHigh);
+    }
+
+    function earListenVisual() { return '<p class="avayaar-chapter-heading">گوش کن…</p><div class="avayaar-wave-bars"><span></span><span></span><span></span><span></span><span></span></div>'; }
+
+    // Screen 15
+    function earsLowHigh() {
+        var cfg = data.earBank.low_high;
+        render(earsShell(1, earListenVisual()));
+        playTone(cfg.a, 0.6, getAudioCtx().currentTime + 0.1);
+        setTimeout(function() { playTone(cfg.b, 0.6, getAudioCtx().currentTime + 0.05); setTimeout(showLowHighChoices, 900); }, 900);
+    }
+    function showLowHighChoices() {
+        render(earsShell(1, '<p class="avayaar-chapter-heading">کدوم صدا زیرتر بود؟</p><div class="avayaar-ab-row"><button type="button" class="avayaar-choice-card" data-val="a">A</button><button type="button" class="avayaar-choice-card" data-val="b">B</button></div>'));
+        bindChoiceCards(function(val) { state.chapterEars.lowHigh = val; setTimeout(earsTripletMiddle, 350); });
+    }
+
+    // Screen 16
+    function earsTripletMiddle() {
+        var cfg = data.earBank.triplet_middle;
+        render(earsShell(2, earListenVisual()));
+        var ctx = getAudioCtx(); var t = ctx.currentTime + 0.2;
+        cfg.freqs.forEach(function(f) { playTone(f, 0.5, t); t += 0.7; });
+        setTimeout(showTripletChoices, (t - ctx.currentTime) * 1000);
+    }
+    function showTripletChoices() {
+        var html = '<p class="avayaar-chapter-heading">صدای وسط بین این سه تا کدوم بود؟</p><div class="avayaar-ab-row">';
+        ['A', 'B', 'C'].forEach(function(l) { html += '<button type="button" class="avayaar-choice-card" data-val="' + l + '">' + l + '</button>'; });
+        html += '</div>';
+        render(earsShell(2, html));
+        bindChoiceCards(function(val) { state.chapterEars.tripletMiddle = val; setTimeout(earsSimilarity, 350); });
+    }
+
+    // Screen 17
+    function earsSimilarity() {
+        var cfg = data.earBank.similarity_pair;
+        render(earsShell(3, earListenVisual()));
+        playTone(cfg.a, 0.6, getAudioCtx().currentTime + 0.1);
+        setTimeout(function() { playTone(cfg.b, 0.6, getAudioCtx().currentTime + 0.05); setTimeout(showSimilaritySlider, 900); }, 900);
+    }
+    function showSimilaritySlider() {
+        render(earsShell(3,
+            '<p class="avayaar-chapter-heading">به نظرت این دو صدا چقدر شبیه هم بودن؟</p>' +
+            '<div class="avayaar-spectrum-wrap"><input type="range" min="0" max="100" value="50" id="avayaar-similarity-range" class="avayaar-spectrum-slider" />' +
+            '<div class="avayaar-spectrum-labels"><span>خیلی متفاوت</span><span>خیلی شبیه</span></div></div>' +
+            '<button id="avayaar-similarity-next" class="avayaar-entry-cta"><span>ادامه</span>' + arrowIcon() + '</button>'
+        ));
+        document.getElementById('avayaar-similarity-next').addEventListener('click', function() {
+            state.chapterEars.similarity = document.getElementById('avayaar-similarity-range').value;
+            earsOddOne();
+        });
+    }
+
+    // Screen 18
+    function earsOddOne() {
+        var cfg = data.earBank.odd_one;
+        var freqs = [cfg.base, cfg.base, cfg.base, cfg.base];
+        freqs[cfg.odd_index] = cfg.odd;
+        var html = '<p class="avayaar-chapter-heading">کدومش با بقیه فرق داشت؟</p><div class="avayaar-ab-row">';
+        ['A', 'B', 'C', 'D'].forEach(function(l, i) { html += '<button type="button" class="avayaar-choice-card" data-key="' + i + '">' + svgIcon('note', 20) + '<span>' + l + '</span></button>'; });
+        html += '</div>';
+        render(earsShell(4, html));
+        bindPreviewSelect('.avayaar-choice-card', function(key) { playTone(freqs[key], 0.5, getAudioCtx().currentTime + 0.05); }, function(key) {
+            state.chapterEars.oddOne = key; setTimeout(earsDirection, 400);
+        });
+    }
+
+    // Screen 19
+    function earsDirection() {
+        var cfg = data.earBank.direction;
+        render(earsShell(5, earListenVisual()));
+        playStereoTone(cfg.from, 1.2, cfg.pan_from, getAudioCtx().currentTime + 0.1);
+        setTimeout(showDirectionChoice, 1500);
+    }
+    function showDirectionChoice() {
+        render(earsShell(5,
+            '<p class="avayaar-chapter-heading">صدا از کدوم سمت شروع شد؟</p>' +
+            '<div class="avayaar-direction-track">' +
+            '<button type="button" class="avayaar-direction-point" data-val="right">راست</button>' +
+            '<button type="button" class="avayaar-direction-point" data-val="mid">وسط</button>' +
+            '<button type="button" class="avayaar-direction-point" data-val="left">چپ</button>' +
+            '</div>'
+        ));
+        bindChoiceCards(function(val) { state.chapterEars.direction = val; setTimeout(earsPitchMove, 350); }, '.avayaar-direction-point');
+    }
+
+    // Screen 20
+    function earsPitchMove() {
+        var directions = ['up', 'down', 'flat'];
+        var dir = directions[Math.floor(Math.random() * directions.length)];
+        render(earsShell(6, earListenVisual()));
+        var base = 440;
+        var target = dir === 'up' ? base * 1.5 : (dir === 'down' ? base * 0.67 : base);
+        playToneSlide(base, target, 1.2, getAudioCtx().currentTime + 0.1);
+        setTimeout(showPitchMoveChoices, 1600);
+    }
+    function showPitchMoveChoices() {
+        render(earsShell(6,
+            '<p class="avayaar-chapter-heading">صدا به کدوم سمت رفت؟</p>' +
+            '<div class="avayaar-ab-row">' +
+            '<button type="button" class="avayaar-choice-card" data-val="up">بالاتر رفت</button>' +
+            '<button type="button" class="avayaar-choice-card" data-val="down">پایین‌تر رفت</button>' +
+            '<button type="button" class="avayaar-choice-card" data-val="flat">تقریباً ثابت موند</button>' +
+            '</div>'
+        ));
+        bindChoiceCards(function(val) { state.chapterEars.pitchMove = val; setTimeout(earsNoteCount, 350); });
+    }
+
+    // Screen 21
+    function earsNoteCount() {
+        var cfg = data.earBank.note_count;
+        render(earsShell(7, earListenVisual()));
+        var ctx = getAudioCtx(); var t = ctx.currentTime + 0.2;
+        cfg.freqs.forEach(function(f) { playTone(f, 0.35, t); t += 0.42; });
+        setTimeout(showNoteCountChoices, (t - ctx.currentTime) * 1000 + 200);
+    }
+    function showNoteCountChoices() {
+        var html = '<p class="avayaar-chapter-heading">چند صدا شنیدی؟</p><div class="avayaar-ab-row">';
+        [2, 3, 4, 5, 6].forEach(function(n) { html += '<button type="button" class="avayaar-choice-card" data-val="' + n + '">' + n + '</button>'; });
+        html += '</div>';
+        render(earsShell(7, html));
+        bindChoiceCards(function(val) { state.chapterEars.noteCount = val; setTimeout(earsMelodyDirection, 350); });
+    }
+
+    // Screen 22
+    function earsMelodyDirection() {
+        var cfg = data.earBank.melody_direction;
+        render(earsShell(8, earListenVisual()));
+        var ctx = getAudioCtx(); var t = ctx.currentTime + 0.2;
+        cfg.freqs.forEach(function(f) { playTone(f, 0.35, t); t += 0.4; });
+        setTimeout(showMelodyDirectionChoices, (t - ctx.currentTime) * 1000 + 200);
+    }
+    function showMelodyDirectionChoices() {
+        render(earsShell(8,
+            '<p class="avayaar-chapter-heading">ملودی بیشتر به کدوم سمت حرکت کرد؟</p>' +
+            '<div class="avayaar-ab-row">' +
+            '<button type="button" class="avayaar-choice-card" data-val="up">↗</button>' +
+            '<button type="button" class="avayaar-choice-card" data-val="down">↘</button>' +
+            '<button type="button" class="avayaar-choice-card" data-val="wavy">〰</button>' +
+            '</div>'
+        ));
+        bindChoiceCards(function(val) { state.chapterEars.melodyDirection = val; setTimeout(earsMood, 350); });
+    }
+
+    // Screen 23
+    function earsMood() {
+        render(earsShell(9, earListenVisual()));
+        var ctx = getAudioCtx(); var t = ctx.currentTime + 0.2;
+        data.earBank.mode_pieces.a.forEach(function(f) { playTone(f, 0.4, t); t += 0.42; });
+        setTimeout(showMoodChoices, (t - ctx.currentTime) * 1000 + 200);
+    }
+    function showMoodChoices() {
+        render(earsShell(9,
+            '<p class="avayaar-chapter-heading">این موسیقی برای تو چه حال‌وهوایی داشت؟</p>' +
+            '<div class="avayaar-ab-row">' +
+            '<button type="button" class="avayaar-choice-card avayaar-scene-bright" data-val="bright">روشن و سرزنده</button>' +
+            '<button type="button" class="avayaar-choice-card avayaar-scene-deep" data-val="deep">عمیق و تأمل‌برانگیز</button>' +
+            '</div>'
+        ));
+        bindChoiceCards(function(val) { state.chapterEars.mood = val; setTimeout(earsModeCompare, 350); });
+    }
+
+    // Screen 24 (part 1) + Screen 25 + Screen 24 (part 2, separated per spec)
+    function earsModeCompare() {
+        render(earsShell(10, earListenVisual()));
+        var ctx = getAudioCtx(); var t = ctx.currentTime + 0.2;
+        data.earBank.mode_pieces.a.forEach(function(f) { playTone(f, 0.35, t); t += 0.38; });
+        t += 0.3;
+        data.earBank.mode_pieces.b.forEach(function(f) { playTone(f, 0.35, t); t += 0.38; });
+        setTimeout(showModeBrighterChoice, (t - ctx.currentTime) * 1000 + 200);
+    }
+    function showModeBrighterChoice() {
+        render(earsShell(10,
+            '<p class="avayaar-chapter-heading">کدوم قطعه حس روشن‌تری داشت؟</p>' +
+            '<div class="avayaar-ab-row"><button type="button" class="avayaar-choice-card" data-val="a">A</button><button type="button" class="avayaar-choice-card" data-val="b">B</button></div>'
+        ));
+        bindChoiceCards(function(val) { state.chapterEars.modeCompare.brighter = val; setTimeout(earsEmotionalScene, 350); });
+    }
+    function earsEmotionalScene() {
+        render(earsShell(11, earListenVisual()));
+        var ctx = getAudioCtx(); var t = ctx.currentTime + 0.2;
+        [349, 415, 494, 587].forEach(function(f) { playTone(f, 0.4, t); t += 0.45; });
+        setTimeout(showEmotionalSceneChoices, (t - ctx.currentTime) * 1000 + 200);
+    }
+    function showEmotionalSceneChoices() {
+        render(earsShell(11,
+            '<p class="avayaar-chapter-heading">اگر این صدا یک صحنه بود، کجا بود؟</p>' +
+            '<div class="avayaar-scene-grid">' +
+            '<button type="button" class="avayaar-scene-tile avayaar-scene-night" data-val="night">شب</button>' +
+            '<button type="button" class="avayaar-scene-tile avayaar-scene-water" data-val="water">کنار آب</button>' +
+            '<button type="button" class="avayaar-scene-tile avayaar-scene-city" data-val="city">شهر</button>' +
+            '<button type="button" class="avayaar-scene-tile avayaar-scene-nature" data-val="nature">طبیعت</button>' +
+            '</div>'
+        ));
+        bindChoiceCards(function(val) { state.chapterEars.emotionalScene = val; setTimeout(showModePreferredChoice, 350); }, '.avayaar-scene-tile');
+    }
+    function showModePreferredChoice() {
+        render(earsShell(12,
+            '<p class="avayaar-chapter-heading">کدوم قطعه بیشتر به دلت نشست؟</p>' +
+            '<div class="avayaar-ab-row"><button type="button" class="avayaar-choice-card" data-val="a">A</button><button type="button" class="avayaar-choice-card" data-val="b">B</button></div>'
+        ));
+        bindChoiceCards(function(val) { state.chapterEars.modeCompare.preferred = val; setTimeout(earsTimbre, 350); });
+    }
+
+    // Screen 26
+    function earsTimbre() {
+        render(earsShell(13, earListenVisual()));
+        playTone(392, 0.9, getAudioCtx().currentTime + 0.1, 'triangle');
+        setTimeout(showTimbreChoices, 1200);
+    }
+    function showTimbreChoices() {
+        var opts = [{ key: 'piano', label: 'پیانو', icon: 'piano' }, { key: 'violin', label: 'ویولن', icon: 'note' }, { key: 'guitar', label: 'گیتار', icon: 'note' }, { key: 'flute', label: 'فلوت', icon: 'note' }];
+        var html = '<p class="avayaar-chapter-heading">فکر می‌کنی این صدا متعلق به کدوم سازه؟</p><div class="avayaar-ab-row">';
+        opts.forEach(function(o) { html += '<button type="button" class="avayaar-choice-card" data-val="' + o.key + '">' + svgIcon(o.icon, 22) + '<span>' + o.label + '</span></button>'; });
+        html += '</div>';
+        render(earsShell(13, html));
+        bindChoiceCards(function(val) { state.chapterEars.timbre = val; setTimeout(earsInstrumentCharacter, 350); });
+    }
+
+    // Screen 27
+    function earsInstrumentCharacter() {
+        var waves = ['sine', 'triangle', 'sawtooth'];
+        var html = '<p class="avayaar-chapter-heading">کدوم صدا بیشتر شبیه پیانو بود؟</p><div class="avayaar-ab-row">';
+        ['A', 'B', 'C'].forEach(function(l, i) { html += '<button type="button" class="avayaar-choice-card" data-key="' + i + '">' + svgIcon('piano', 20) + '<span>' + l + '</span></button>'; });
+        html += '</div>';
+        render(earsShell(14, html));
+        bindPreviewSelect('.avayaar-choice-card', function(key) { playTone(440, 0.5, getAudioCtx().currentTime + 0.05, waves[key]); }, function(key) {
+            state.chapterEars.instrumentChar = key; setTimeout(earsSoundMemory, 400);
+        });
+    }
+
+    // Screen 28
+    function earsSoundMemory() {
+        var cfg = data.earBank.sound_memory;
+        render(earsShell(15, earListenVisual()));
+        var ctx = getAudioCtx(); var t = ctx.currentTime + 0.2;
+        cfg.target.forEach(function(f) { playTone(f, 0.35, t); t += 0.4; });
+        setTimeout(function() { showSoundMemoryChoices(cfg); }, (t - ctx.currentTime) * 1000 + 300);
+    }
+    function showSoundMemoryChoices(cfg) {
+        var html = '<p class="avayaar-chapter-heading">کدوم رو قبلاً شنیدی؟</p><div class="avayaar-ab-row">';
+        ['A', 'B', 'C'].forEach(function(l, i) { html += '<button type="button" class="avayaar-choice-card" data-key="' + i + '">' + svgIcon('note', 20) + '<span>' + l + '</span></button>'; });
+        html += '</div>';
+        render(earsShell(15, html));
+        bindPreviewSelect('.avayaar-choice-card', function(key) {
+            var ctx = getAudioCtx(); var t = ctx.currentTime + 0.05;
+            cfg.options[key].forEach(function(f) { playTone(f, 0.3, t); t += 0.34; });
+        }, function(key) { state.chapterEars.soundMemory = key; setTimeout(earsPreference, 400); });
+    }
+
+    // Screen 29
+    function earsPreference() {
+        var cfg = data.earBank.preference;
+        var html = '<p class="avayaar-chapter-heading">اگر بخوای یکی رو دوباره بشنوی…</p><div class="avayaar-ab-row">';
+        ['A', 'B', 'C'].forEach(function(l, i) { html += '<button type="button" class="avayaar-choice-card" data-key="' + i + '">' + svgIcon('heart', 20) + '<span>' + l + '</span></button>'; });
+        html += '</div>';
+        render(earsShell(16, html));
+        bindPreviewSelect('.avayaar-choice-card', function(key) {
+            var ctx = getAudioCtx(); var t = ctx.currentTime + 0.05;
+            cfg.options[key].forEach(function(f) { playTone(f, 0.32, t); t += 0.36; });
+        }, function(key) { state.chapterEars.preference = key; setTimeout(earsFinalChallenge, 400); });
+    }
+
+    // Screen 30
+    function earsFinalChallenge() {
+        var cfg = data.earBank.final_melody;
+        render(earsShell(17, '<p class="avayaar-chapter-heading">این یکی رو فقط گوش کن.</p><div class="avayaar-wave-bars"><span></span><span></span><span></span><span></span><span></span></div>'));
+        var ctx = getAudioCtx(); var t = ctx.currentTime + 0.2;
+        cfg.target.forEach(function(f) { playTone(f, 0.32, t); t += 0.36; });
+        setTimeout(function() { showFinalMelodyChoices(cfg); }, (t - ctx.currentTime) * 1000 + 300);
+    }
+    function showFinalMelodyChoices(cfg) {
+        var html = '<p class="avayaar-chapter-heading">حالا چیزی که شنیدی رو پیدا کن.</p><div class="avayaar-ab-row">';
+        ['A', 'B', 'C', 'D'].forEach(function(l, i) { html += '<button type="button" class="avayaar-choice-card" data-key="' + i + '">' + svgIcon('note', 20) + '<span>' + l + '</span></button>'; });
+        html += '</div>';
+        render(earsShell(17, html));
+        bindPreviewSelect('.avayaar-choice-card', function(key) {
+            var ctx = getAudioCtx(); var t = ctx.currentTime + 0.05;
+            cfg.options[key].forEach(function(f) { playTone(f, 0.28, t); t += 0.32; });
+        }, function(key) {
+            state.chapterEars.finalMelody = key;
+            render(earsShell(17, '<p class="avayaar-chapter-heading">خوب گوش دادی.</p>'));
+            setTimeout(earsToNextTransition, 900);
+        });
+    }
+    function earsToNextTransition() {
+        render('<div class="avayaar-transition"><p class="avayaar-transition-text avayaar-transition-emphasis">حالا ببینیم چه موسیقی‌ای با تو جور درمیاد.</p></div>');
+        setTimeout(startStyleStage, 1800);
     }
 
     // ---------- Stage 3: Music Style ----------

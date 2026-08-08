@@ -615,3 +615,102 @@
     .avayaar-meet-title { font-size: 22px; }
     .avayaar-meet-question-text { font-size: 18px; }
 }
+
+/* ============ Chapter shells (Rhythm + Ears) ============ */
+.avayaar-chapter-shell {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    padding: 100px 24px 60px;
+    text-align: center;
+}
+.avayaar-rhythm-shell, .avayaar-ears-shell { position: relative; }
+.avayaar-rhythm-shell::before {
+    content: ''; position: absolute; inset: 0; z-index: -1;
+    background: radial-gradient(circle at 50% 30%, rgba(241,105,35,0.06), transparent 60%);
+}
+.avayaar-ears-shell::before {
+    content: ''; position: absolute; inset: 0; z-index: -1;
+    background: radial-gradient(circle at 50% 30%, rgba(79,124,255,0.05), transparent 60%);
+}
+.avayaar-chapter-heading { font-size: 22px; color: var(--avayaar-heading); font-weight: 600; margin: 0; }
+.avayaar-chapter-sub { font-size: 14px; color: var(--avayaar-body); margin: -10px 0 0; line-height: 1.8; }
+
+.avayaar-pulse-solo { width: 64px; height: 64px; margin: 20px auto; }
+
+/* ============ Shared A/B / multi-choice row ============ */
+.avayaar-ab-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; width: 100%; }
+.avayaar-choice-card.is-armed { border-color: rgba(241,105,35,0.6); }
+
+/* ============ Equalizer "listening" indicator (Ears chapter) ============ */
+.avayaar-wave-bars { display: flex; align-items: flex-end; justify-content: center; gap: 5px; height: 48px; margin: 10px 0; }
+.avayaar-wave-bars span { width: 5px; border-radius: 3px; background: var(--avayaar-accent); opacity: 0.75; animation: avayaarBarBounce 1.1s ease-in-out infinite; }
+.avayaar-wave-bars span:nth-child(1) { height: 16px; animation-delay: 0s; }
+.avayaar-wave-bars span:nth-child(2) { height: 32px; animation-delay: .12s; }
+.avayaar-wave-bars span:nth-child(3) { height: 46px; animation-delay: .24s; }
+.avayaar-wave-bars span:nth-child(4) { height: 28px; animation-delay: .36s; }
+.avayaar-wave-bars span:nth-child(5) { height: 18px; animation-delay: .48s; }
+@keyframes avayaarBarBounce { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(1); } }
+
+/* ============ Missing beat (Screen 09) ============ */
+.avayaar-missing-beat-row { display: flex; gap: 14px; justify-content: center; }
+.avayaar-missing-beat-dot {
+    width: 52px; height: 52px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.15); background: transparent;
+    color: var(--avayaar-body); font-family: inherit; cursor: pointer;
+    transition: all 0.25s ease;
+}
+.avayaar-missing-beat-dot:hover { border-color: rgba(241,105,35,0.4); }
+.avayaar-missing-beat-dot.is-selected { border-color: var(--avayaar-accent); color: var(--avayaar-heading); box-shadow: 0 0 14px rgba(241,105,35,0.3); }
+
+/* ============ Similarity spectrum slider (Screen 17) ============ */
+.avayaar-spectrum-wrap { width: 100%; max-width: 320px; }
+.avayaar-spectrum-slider {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
+    border-radius: 999px; background: rgba(255,255,255,0.12); outline: none; margin: 20px 0 10px;
+}
+.avayaar-spectrum-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--avayaar-accent); cursor: pointer; box-shadow: 0 0 10px rgba(241,105,35,0.5);
+}
+.avayaar-spectrum-slider::-moz-range-thumb {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--avayaar-accent); border: none; cursor: pointer;
+}
+.avayaar-spectrum-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--avayaar-body); opacity: 0.7; }
+
+/* ============ Direction track (Screen 19) ============ */
+.avayaar-direction-track { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 320px; position: relative; }
+.avayaar-direction-track::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(255,255,255,0.15); z-index: 0; }
+.avayaar-direction-point {
+    position: relative; z-index: 1; background: var(--avayaar-bg);
+    border: 1px solid rgba(255,255,255,0.2); color: var(--avayaar-body);
+    font-family: inherit; font-size: 13px; padding: 10px 16px; border-radius: 999px; cursor: pointer;
+    transition: all 0.25s ease;
+}
+.avayaar-direction-point.is-selected { border-color: var(--avayaar-accent); color: var(--avayaar-heading); background: rgba(241,105,35,0.12); }
+
+/* ============ Emotional scene tiles (Screen 25) ============ */
+.avayaar-scene-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 340px; }
+.avayaar-scene-tile {
+    border: none; border-radius: 14px; padding: 26px 12px; color: #fff;
+    font-family: inherit; font-size: 14px; cursor: pointer; position: relative; overflow: hidden;
+    transition: transform 0.25s ease;
+}
+.avayaar-scene-tile:hover { transform: translateY(-2px); }
+.avayaar-scene-tile.is-selected { box-shadow: 0 0 0 2px var(--avayaar-accent); }
+.avayaar-scene-night  { background: radial-gradient(circle at 30% 20%, #1c2540, #0B111B); }
+.avayaar-scene-water  { background: repeating-linear-gradient(115deg, #14304a 0 4px, #0d2136 4px 10px); }
+.avayaar-scene-city   { background: repeating-linear-gradient(90deg, #232c45 0 3px, #182842 3px 14px); }
+.avayaar-scene-nature { background: radial-gradient(ellipse at 60% 80%, #1f3a2e, #0B111B); }
+
+/* ============ Mood self-report variants (Screen 23) ============ */
+.avayaar-scene-bright { background: linear-gradient(135deg, rgba(241,105,35,0.18), rgba(241,105,35,0.04)); }
+.avayaar-scene-deep   { background: linear-gradient(135deg, rgba(24,40,66,0.9), rgba(11,17,27,0.9)); }
