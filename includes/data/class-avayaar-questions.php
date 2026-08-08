@@ -84,4 +84,15 @@ class Avayaar_Questions {
                 ) ),
         );
     }
+
+    /**
+     * Same as get_ear_questions() but strips the answer key —
+     * this is what gets sent to the browser.
+     */
+    public static function get_ear_questions_frontend() {
+        return array_map( function( $q ) {
+            unset( $q['correct'] );
+            return $q;
+        }, self::get_ear_questions() );
+    }
 }

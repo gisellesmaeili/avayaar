@@ -1,0 +1,57 @@
+.avayaar-root { max-width: 480px; margin: 0 auto; }
+
+.avayaar-card {
+    background: #10172A;
+    color: #fff;
+    border-radius: 16px;
+    padding: 28px 20px;
+    text-align: center;
+}
+
+.avayaar-progress { font-size: 13px; opacity: 0.6; margin-bottom: 12px; }
+
+.avayaar-btn-primary,
+.avayaar-btn,
+.avayaar-tap-btn {
+    display: inline-block;
+    border: none;
+    border-radius: 999px;
+    padding: 14px 28px;
+    font-size: 16px;
+    cursor: pointer;
+    margin: 6px;
+}
+
+.avayaar-btn-primary { background: #4F7CFF; color: #fff; }
+.avayaar-btn { background: rgba(255,255,255,0.1); color: #fff; }
+
+.avayaar-tap-btn {
+    background: #4F7CFF;
+    color: #fff;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    font-size: 18px;
+}
+
+.avayaar-options { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 16px; }
+
+.avayaar-pulse {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(79,124,255,0.3);
+    margin: 20px auto;
+    transition: transform 0.1s ease, background 0.1s ease;
+}
+.avayaar-pulse.active { background: #4F7CFF; transform: scale(1.3); }
+
+.avayaar-input {
+    display: block;
+    width: 100%;
+    margin: 10px 0;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    text-align: right;
+}
+
+.avayaar-error { color: #ff6b6b; font-size: 13px; margin-top: 8px; }

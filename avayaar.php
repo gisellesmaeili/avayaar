@@ -2,13 +2,13 @@
 /**
  * Plugin Name: آوایار
  * Description: دستیار استعدادیابی موسیقی
- * Version: 1.0.2
+ * Version: 1.0.3
  * Text Domain: avayaar
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'AVAYAAR_VERSION', '1.0.2' );
+define( 'AVAYAAR_VERSION', '1.0.3' );
 define( 'AVAYAAR_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AVAYAAR_URL', plugin_dir_url( __FILE__ ) );
 
@@ -19,10 +19,12 @@ require_once AVAYAAR_PATH . 'includes/data/class-avayaar-questions.php';
 require_once AVAYAAR_PATH . 'includes/data/class-avayaar-recommendations.php';
 require_once AVAYAAR_PATH . 'includes/class-avayaar-scoring.php';
 require_once AVAYAAR_PATH . 'includes/class-avayaar-ajax.php';
+require_once AVAYAAR_PATH . 'includes/class-avayaar-shortcode.php';
 
 register_activation_hook( __FILE__, array( 'AVAYAAR_Install', 'activate' ) );
 
 add_action( 'plugins_loaded', function() {
     new AVAYAAR_Admin_Menu();
     new Avayaar_Ajax();
+    new Avayaar_Shortcode();
 } );
