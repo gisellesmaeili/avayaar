@@ -4,6 +4,9 @@
     var root = document.getElementById('avayaar-root');
     if (!root) return;
 
+    root.innerHTML = '<div class="avayaar-grain" aria-hidden="true"></div><div id="avayaar-stage"></div>';
+    var stage = document.getElementById('avayaar-stage');
+
     var data = window.AvayaarData || {};
     var RHYTHM_ROUNDS = 3;
     var TOTAL_STAGES = 5;
@@ -51,7 +54,25 @@
         setTimeout(onDone, (t - ctx.currentTime) * 1000 + 300);
     }
 
-    function render(html) { root.innerHTML = '<div class="avayaar-fade-in">' + html + '</div>'; }
+    function render(html) { stage.innerHTML = '<div class="avayaar-fade-in">' + html + '</div>'; }
+
+    function playMicroSound() {
+        try {
+            var ctx = getAudioCtx();
+            var t = ctx.currentTime;
+            var osc = ctx.createOscillator();
+            var gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, t);
+            osc.frequency.exponentialRampToValueAtTime(1320, t + 0.12);
+            gain.gain.setValueAtTime(0.0001, t);
+            gain.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+            osc.connect(gain).connect(ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.4);
+        } catch (e) { /* audio unavailable — never block navigation on sound */ }
+    }
 
     function progressBar() {
         var pct = Math.round((state.stage / TOTAL_STAGES) * 100);
@@ -68,19 +89,68 @@
         setTimeout(function() { next(); }, 500);
     }
 
-    // ---------- Intro ----------
-    function renderIntro() {
+    // ---------- Screen 00 — Entry ----------
+    function renderEntryScreen() {
         render(
-            '<div class="avayaar-card avayaar-intro">' +
-            '<h2>سفر موسیقی آوایار 🎵</h2>' +
-            '<p>در ۵ مرحله کوتاه و باحال، ببین کدوم ساز باهات بیشتر جوره. هیچ جواب درست یا غلطی وجود نداره!</p>' +
-            '<button id="avayaar-start" class="avayaar-btn-primary">بزن بریم 🚀</button>' +
+            '<div class="avayaar-entry">' +
+            '<div class="avayaar-entry-logo">رودکی</div>' +
+            '<div class="avayaar-entry-center">' +
+            '<div class="avayaar-orb-wrap">' +
+            '<div class="avayaar-orb-dot"></div>' +
+            '<div class="avayaar-orb" id="avayaar-orb">' +
+            '<div class="avayaar-orb-core"></div>' +
+            '</div>' +
+            '<svg class="avayaar-orb-rings" viewBox="0 0 180 180">' +
+            '<circle class="ring-1" cx="90" cy="90" r="55"/>' +
+            '<circle class="ring-2" cx="90" cy="90" r="70"/>' +
+            '</svg>' +
+            '<div class="avayaar-orb-particles"><span></span><span></span><span></span><span></span><span></span><span></span></div>' +
+            '</div>' +
+            '<div>' +
+            '<h1 class="avayaar-entry-headline"><span class="line1">هر آدمی</span><span class="line2">یک ریتم دارد.</span></h1>' +
+            '<p class="avayaar-entry-subtitle">یک سفر کوتاه به دنیای موسیقیایی تو.</p>' +
+            '</div>' +
+            '</div>' +
+            '<div class="avayaar-entry-bottom">' +
+            '<button id="avayaar-start" class="avayaar-entry-cta">' +
+            '<span>شروع تجربه</span>' +
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>' +
+            '</button>' +
+            '<div class="avayaar-entry-meta">۵–۷ دقیقه · تجربه صوتی</div>' +
+            '</div>' +
             '</div>'
         );
-        document.getElementById('avayaar-start').addEventListener('click', function() {
-            getAudioCtx();
-            startEarStage();
+
+        var orb = document.getElementById('avayaar-orb');
+        setTimeout(function() { if (orb) orb.classList.add('avayaar-breathing'); }, 1400);
+        orb.addEventListener('animationend', function(e) {
+            if (e.animationName === 'avayaarOrbPulseHover') {
+                orb.classList.remove('avayaar-pulse-hover');
+                orb.classList.add('avayaar-breathing');
+            }
         });
+
+        var cta = document.getElementById('avayaar-start');
+        cta.addEventListener('mouseenter', function() {
+            orb.classList.remove('avayaar-breathing');
+            orb.classList.add('avayaar-pulse-hover');
+        });
+        cta.addEventListener('click', function() {
+            getAudioCtx();
+            playMicroSound();
+            renderTransitionScreen();
+        });
+    }
+
+    // ---------- Screen 01 — Transition ----------
+    function renderTransitionScreen() {
+        render('<div class="avayaar-transition"><p class="avayaar-transition-text">این سفر درباره‌ی توست.</p></div>');
+        setTimeout(startUserInfoStage, 1800);
+    }
+
+    // TODO: Screen 02 (user info) — built in the next step.
+    function startUserInfoStage() {
+        render('<div class="avayaar-transition"><p class="avayaar-transition-text">مرحله بعد به‌زودی اضافه می‌شود…</p></div>');
     }
 
     // ---------- Stage 1: Musical Ear ----------
@@ -376,5 +446,5 @@
         link.click();
     }
 
-    renderIntro();
+    renderEntryScreen();
 })();

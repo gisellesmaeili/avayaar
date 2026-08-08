@@ -2,13 +2,13 @@
 /**
  * Plugin Name: آوایار
  * Description: دستیار استعدادیابی موسیقی
- * Version: 1.0.6
+ * Version: 1.0.7
  * Text Domain: avayaar
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'AVAYAAR_VERSION', '1.0.6' );
+define( 'AVAYAAR_VERSION', '1.0.7' );
 define( 'AVAYAAR_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AVAYAAR_URL', plugin_dir_url( __FILE__ ) );
 define( 'AVAYAAR_ACADEMY_PHONE', '01132331323' );

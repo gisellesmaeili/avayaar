@@ -4,11 +4,45 @@
     font-weight: 100 900;
     font-display: swap;
 }
+:root {
+    --avayaar-bg: #0B111B;
+    --avayaar-primary: #182842;
+    --avayaar-accent: #F16923;
+    --avayaar-heading: #ffffff;
+    --avayaar-body: #B8C4D4;
+}
+
 .avayaar-root, .avayaar-detail, .avayaar-result {
     font-family: 'IRANYekanXAvayaar', Tahoma, sans-serif;
 }
 
-.avayaar-root { max-width: 480px; margin: 0 auto; }
+.avayaar-root,
+.avayaar-root *,
+.avayaar-root *::before,
+.avayaar-root *::after {
+    box-sizing: border-box;
+}
+
+.avayaar-root {
+    position: relative;
+    width: 100vw;
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    background: var(--avayaar-bg);
+    color: var(--avayaar-body);
+    overflow: hidden;
+    direction: rtl;
+}
+
+#avayaar-stage {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    z-index: 2;
+}
 
 .avayaar-card {
     background: #10172A;
@@ -131,3 +165,250 @@
 .avayaar-cta { display: block; text-decoration: none; margin-bottom: 10px; }
 
 .avayaar-confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 99999; }
+
+/* ============ Grain overlay (persistent, sits above bg, below content) ============ */
+.avayaar-grain {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.035;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============ Screen 00 — Entry ============ */
+.avayaar-entry {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 48px 24px 40px;
+    text-align: center;
+}
+
+.avayaar-entry-logo {
+    font-size: 13px;
+    letter-spacing: 4px;
+    color: var(--avayaar-body);
+    opacity: 0;
+    animation: avayaarFadeUp 0.8s ease forwards;
+    animation-delay: 1.8s;
+}
+
+.avayaar-entry-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+}
+
+/* --- Orb --- */
+.avayaar-orb-wrap {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avayaar-orb-dot {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--avayaar-accent);
+    opacity: 0;
+    animation: avayaarDot 0.6s ease forwards;
+    animation-delay: 0.3s;
+}
+
+.avayaar-orb {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, rgba(241,105,35,0.9), rgba(241,105,35,0.35) 45%, rgba(241,105,35,0.05) 70%);
+    box-shadow: 0 0 60px 10px rgba(241,105,35,0.25);
+    opacity: 0;
+    transform: scale(0.15);
+    animation: avayaarOrbEmerge 0.7s cubic-bezier(.22,.8,.32,1) forwards;
+    animation-delay: 0.7s;
+}
+.avayaar-orb.avayaar-breathing { animation: avayaarOrbBreathe 4.5s ease-in-out infinite; }
+.avayaar-orb.avayaar-pulse-hover { animation: avayaarOrbPulseHover 0.6s ease; }
+
+.avayaar-orb-core {
+    position: absolute;
+    inset: 30%;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff 0%, rgba(241,105,35,0.6) 70%);
+    filter: blur(1px);
+    opacity: 0.9;
+}
+
+.avayaar-orb-rings {
+    position: absolute;
+    inset: -30px;
+    width: 180px;
+    height: 180px;
+    opacity: 0;
+    animation: avayaarFadeIn 0.8s ease forwards;
+    animation-delay: 1.3s;
+}
+.avayaar-orb-rings circle { fill: none; stroke: rgba(241,105,35,0.35); stroke-width: 1; transform-origin: center; }
+.avayaar-orb-rings .ring-1 { animation: avayaarRingPulse 3.5s ease-in-out infinite; }
+.avayaar-orb-rings .ring-2 { animation: avayaarRingPulse 3.5s ease-in-out infinite 0.6s; }
+
+.avayaar-orb-particles {
+    position: absolute;
+    inset: -40px;
+    opacity: 0;
+    animation-name: avayaarFadeIn, avayaarRotate;
+    animation-duration: 0.8s, 18s;
+    animation-timing-function: ease, linear;
+    animation-iteration-count: 1, infinite;
+    animation-delay: 1.3s, 1.3s;
+    animation-fill-mode: forwards, none;
+}
+.avayaar-orb-particles span {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--avayaar-accent);
+}
+.avayaar-orb-particles span:nth-child(1) { transform: rotate(0deg) translateX(95px); }
+.avayaar-orb-particles span:nth-child(2) { transform: rotate(60deg) translateX(95px); opacity: 0.7; }
+.avayaar-orb-particles span:nth-child(3) { transform: rotate(120deg) translateX(95px); opacity: 0.5; }
+.avayaar-orb-particles span:nth-child(4) { transform: rotate(180deg) translateX(95px); }
+.avayaar-orb-particles span:nth-child(5) { transform: rotate(240deg) translateX(95px); opacity: 0.7; }
+.avayaar-orb-particles span:nth-child(6) { transform: rotate(300deg) translateX(95px); opacity: 0.5; }
+
+/* --- Text --- */
+.avayaar-entry-headline {
+    font-size: 40px;
+    line-height: 1.35;
+    color: var(--avayaar-heading);
+    font-weight: 700;
+    margin: 0;
+    opacity: 0;
+    animation: avayaarFadeUp 0.8s ease forwards;
+    animation-delay: 2.1s;
+}
+.avayaar-entry-headline .line2 { margin-inline-start: 8px; }
+
+.avayaar-entry-subtitle {
+    font-size: 16px;
+    color: var(--avayaar-body);
+    margin: 14px 0 0;
+    opacity: 0;
+    animation: avayaarFadeUp 0.8s ease forwards;
+    animation-delay: 2.6s;
+}
+
+.avayaar-entry-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    opacity: 0;
+    animation: avayaarFadeUp 0.8s ease forwards;
+    animation-delay: 3s;
+}
+
+.avayaar-entry-cta {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    border: 1px solid rgba(241,105,35,0.5);
+    color: var(--avayaar-heading);
+    padding: 16px 34px;
+    border-radius: 999px;
+    font-size: 16px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.35s ease, border-color 0.35s ease, transform 0.2s ease;
+}
+.avayaar-entry-cta:hover { background: rgba(241,105,35,0.12); border-color: var(--avayaar-accent); }
+.avayaar-entry-cta:active { transform: scale(0.97); }
+.avayaar-entry-cta svg { transition: transform 0.3s ease; }
+.avayaar-entry-cta:hover svg { transform: translateX(-4px); }
+
+.avayaar-entry-meta {
+    font-size: 12px;
+    color: var(--avayaar-body);
+    opacity: 0.6;
+    letter-spacing: 0.3px;
+}
+
+/* ============ Screen 01 — Transition ============ */
+.avayaar-transition {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+.avayaar-transition-text {
+    font-size: 22px;
+    color: var(--avayaar-heading);
+    font-weight: 600;
+    opacity: 0;
+    animation: avayaarFadeUp 0.6s ease forwards;
+    animation-delay: 0.15s;
+}
+
+/* ============ Keyframes ============ */
+@keyframes avayaarDot {
+    0% { opacity: 0; transform: scale(0.5); }
+    40% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.4); }
+}
+@keyframes avayaarOrbEmerge {
+    0% { opacity: 0; transform: scale(0.15); }
+    100% { opacity: 1; transform: scale(1); }
+}
+@keyframes avayaarOrbBreathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+}
+@keyframes avayaarOrbPulseHover {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+}
+@keyframes avayaarRingPulse {
+    0%, 100% { opacity: 0.25; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.06); }
+}
+@keyframes avayaarFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes avayaarRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes avayaarFadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============ Responsive ============ */
+@media (max-width: 600px) {
+    .avayaar-entry-headline { font-size: 30px; }
+    .avayaar-entry-headline .line1,
+    .avayaar-entry-headline .line2 { display: block; }
+    .avayaar-entry-headline .line2 { margin-inline-start: 0; margin-top: 4px; }
+    .avayaar-orb-wrap { width: 130px; height: 130px; }
+    .avayaar-orb { width: 90px; height: 90px; }
+    .avayaar-entry-cta { width: 100%; justify-content: center; padding: 16px 20px; }
+}
