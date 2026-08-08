@@ -9,8 +9,7 @@ class Avayaar_Admin_Menu {
     }
 
     public function register_menu() {
-        $icon = plugin_dir_url( __FILE__ ) . '../assets/icons/music.svg';
-        add_menu_page( 'آوایار', 'آوایار', 'manage_options', 'avayaar', array( $this, 'render_page' ), $icon, 26 );
+        add_menu_page( 'آوایار', 'آوایار', 'manage_options', 'avayaar', array( $this, 'render_page' ), 'dashicons-format-audio', 26 );
         add_submenu_page( 'avayaar', 'سرنخ‌ها', 'سرنخ‌ها', 'manage_options', 'avayaar', array( $this, 'render_page' ) );
     }
 

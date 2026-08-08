@@ -37,6 +37,25 @@ class Avayaar_Ajax {
             'contacted'               => 0,
         ) );
 
-        wp_send_json_success( $result );
+        $archetype_info = Avayaar_Archetypes::get( $result['archetype'] );
+
+        $instruments = array();
+        foreach ( $result['recommended_instruments'] as $iid ) {
+            $title = get_the_title( $iid );
+            if ( ! $title ) continue; // skip if unpublished/trashed since recommendation was computed
+            $instruments[] = array(
+                'id'    => $iid,
+                'title' => $title,
+                'url'   => get_permalink( $iid ),
+            );
+        }
+
+        wp_send_json_success( array(
+            'archetype_key'   => $result['archetype'],
+            'archetype_label' => $archetype_info['label'],
+            'archetype_desc'  => $archetype_info['description'],
+            'module_scores'   => $result['module_scores'],
+            'instruments'     => $instruments,
+        ) );
     }
 }

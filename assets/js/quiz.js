@@ -292,14 +292,110 @@
             });
     }
 
+    function toPersianDigits(str) {
+        var d = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+        return String(str).replace(/[0-9]/g, function(x) { return d[x]; });
+    }
+
+    function dialHtml(percent, label) {
+        var deg = Math.round(percent * 3.6);
+        return '<div class="avayaar-dial-wrap">' +
+            '<div class="avayaar-dial" style="background: conic-gradient(#4F7CFF ' + deg + 'deg, rgba(255,255,255,0.12) 0deg);">' +
+            '<div class="avayaar-dial-inner">' + toPersianDigits(percent) + '٪</div>' +
+            '</div>' +
+            '<div class="avayaar-dial-label">' + label + '</div>' +
+            '</div>';
+    }
+
     function renderResult(result) {
-        // Placeholder only — the real result screen (dials, recommended
-        // instrument pills, share card) is built in Phase 5.
+        var rhythmPct = result.module_scores.rhythm || 0;
+        var earPct = result.module_scores.ear || 0;
+
+        var instrumentsHtml = (result.instruments || []).map(function(inst) {
+            return '<a href="' + inst.url + '" target="_blank" rel="noopener" class="avayaar-pill">' + inst.title + '</a>';
+        }).join('');
+
         render(
-            '<div class="avayaar-card">' +
-            '<h3>پروفایل موسیقایی تو: ' + result.archetype + '</h3>' +
-            '<p>تیم آموزشی آوایار به‌زودی باهات تماس می‌گیره.</p></div>'
+            '<div class="avayaar-card avayaar-result">' +
+            '<h3>پروفایل موسیقایی تو: ' + result.archetype_label + '</h3>' +
+            '<p class="avayaar-archetype-desc">' + result.archetype_desc + '</p>' +
+            '<div class="avayaar-dials">' + dialHtml(rhythmPct, 'ریتم') + dialHtml(earPct, 'شنوایی') + '</div>' +
+            '<h4>سازهای پیشنهادی</h4>' +
+            '<div class="avayaar-instrument-pills">' + (instrumentsHtml || '<p>به‌زودی با شما تماس می‌گیریم.</p>') + '</div>' +
+            '<button id="avayaar-share" class="avayaar-btn">دانلود کارت نتیجه</button>' +
+            '<p class="avayaar-followup">تیم آموزشی آوایار به‌زودی باهات تماس می‌گیره.</p>' +
+            '</div>'
         );
+
+        document.getElementById('avayaar-share').addEventListener('click', function() {
+            downloadShareCard(result);
+        });
+    }
+
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+        var words = text.split(' ');
+        var line = '';
+        var lines = [];
+        words.forEach(function(word) {
+            var test = line ? line + ' ' + word : word;
+            if (ctx.measureText(test).width > maxWidth && line) {
+                lines.push(line);
+                line = word;
+            } else {
+                line = test;
+            }
+        });
+        if (line) lines.push(line);
+        lines.forEach(function(l, i) { ctx.fillText(l, x, y + i * lineHeight); });
+    }
+
+    function drawScoreBlock(ctx, x, y, valueText, label) {
+        ctx.font = 'bold 64px IRANYekanX, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.fillText(valueText, x, y);
+        ctx.font = '30px IRANYekanX, sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.fillText(label, x, y + 50);
+    }
+
+    function downloadShareCard(result) {
+        var canvas = document.createElement('canvas');
+        canvas.width = 1080;
+        canvas.height = 1080;
+        var ctx = canvas.getContext('2d');
+
+        var gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradient.addColorStop(0, '#10172A');
+        gradient.addColorStop(1, '#1B2545');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.direction = 'rtl';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#4F7CFF';
+        ctx.font = 'bold 56px IRANYekanX, sans-serif';
+        ctx.fillText('آوایار', canvas.width / 2, 160);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 72px IRANYekanX, sans-serif';
+        ctx.fillText(result.archetype_label, canvas.width / 2, 320);
+
+        ctx.font = '36px IRANYekanX, sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        wrapText(ctx, result.archetype_desc, canvas.width / 2, 400, 820, 48);
+
+        drawScoreBlock(ctx, canvas.width / 2 - 220, 620, toPersianDigits(result.module_scores.rhythm || 0) + '٪', 'ریتم');
+        drawScoreBlock(ctx, canvas.width / 2 + 220, 620, toPersianDigits(result.module_scores.ear || 0) + '٪', 'شنوایی');
+
+        ctx.font = '28px IRANYekanX, sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillText('roodaki-babol.ir', canvas.width / 2, canvas.height - 60);
+
+        var link = document.createElement('a');
+        link.download = 'avayaar-result.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
     }
 
     renderIntro();

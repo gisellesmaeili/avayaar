@@ -1,3 +1,11 @@
+@font-face {
+    font-family: 'IRANYekanX';
+    src: url('../fonts/IRANYekanXVFaNumVF.woff2') format('woff2-variations');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+
 .avayaar-root { max-width: 480px; margin: 0 auto; }
 
 .avayaar-card {
@@ -55,3 +63,30 @@
 }
 
 .avayaar-error { color: #ff6b6b; font-size: 13px; margin-top: 8px; }
+
+.avayaar-dials { display: flex; justify-content: center; gap: 24px; margin: 20px 0; }
+.avayaar-dial-wrap { text-align: center; }
+.avayaar-dial {
+    width: 110px; height: 110px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto;
+}
+.avayaar-dial-inner {
+    width: 84px; height: 84px; border-radius: 50%;
+    background: #10172A;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: bold;
+}
+.avayaar-dial-label { margin-top: 8px; font-size: 13px; opacity: 0.7; }
+.avayaar-instrument-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 16px 0; }
+.avayaar-pill {
+    background: rgba(79,124,255,0.15);
+    color: #9db4ff;
+    border: 1px solid rgba(79,124,255,0.4);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 14px;
+    text-decoration: none;
+}
+.avayaar-archetype-desc { opacity: 0.85; margin-bottom: 8px; }
+.avayaar-followup { font-size: 13px; opacity: 0.6; margin-top: 16px; }
