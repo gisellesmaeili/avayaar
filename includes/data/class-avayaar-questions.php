@@ -1,16 +1,8 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-/**
- * Static question bank. Edited directly in code by design —
- * no wp-admin content management for this feature.
- */
 class Avayaar_Questions {
 
-    /**
-     * Rhythm tap-along patterns, grouped by difficulty tier (1 = easiest).
-     * 'pattern' values are beat durations in units (1 = quarter note at the given bpm).
-     */
     public static function get_rhythm_patterns() {
         return array(
             1 => array(
@@ -28,71 +20,60 @@ class Avayaar_Questions {
         );
     }
 
-    /**
-     * Ear-sense questions — same/different and longer/shorter only.
-     * No musical background required, per client requirement.
-     */
-    public static function get_ear_questions() {
+    // Stage 1 — Musical Ear (self-report, no correct answer)
+    public static function get_ear_stage() {
         return array(
-            array( 'id' => 'e1', 'type' => 'same_or_different',
-                'tone_a' => array( 'freq' => 440, 'duration_ms' => 600 ),
-                'tone_b' => array( 'freq' => 440, 'duration_ms' => 600 ),
-                'correct' => 'same' ),
-            array( 'id' => 'e2', 'type' => 'same_or_different',
-                'tone_a' => array( 'freq' => 440, 'duration_ms' => 600 ),
-                'tone_b' => array( 'freq' => 494, 'duration_ms' => 600 ),
-                'correct' => 'different' ),
-            array( 'id' => 'e3', 'type' => 'longer_or_shorter',
-                'tone_a' => array( 'freq' => 392, 'duration_ms' => 400 ),
-                'tone_b' => array( 'freq' => 392, 'duration_ms' => 900 ),
-                'correct' => 'b_longer' ),
-            array( 'id' => 'e4', 'type' => 'longer_or_shorter',
-                'tone_a' => array( 'freq' => 349, 'duration_ms' => 900 ),
-                'tone_b' => array( 'freq' => 349, 'duration_ms' => 400 ),
-                'correct' => 'a_longer' ),
+            'tempo_clip' => array( 'bpm' => 96, 'pattern' => array( 1, 1, 1, 1 ) ),
+            'tempo_question' => array(
+                'text'    => 'این ضرب رو چطور احساس کردی؟',
+                'options' => array( 'calm' => 'آروم', 'normal' => 'معمولی', 'fast' => 'تند' ),
+            ),
+            'regularity_clips' => array(
+                'a' => array( 'bpm' => 100, 'pattern' => array( 1, 1, 1, 1 ) ),
+                'b' => array( 'bpm' => 100, 'pattern' => array( 0.5, 1.5, 0.5, 1.5 ) ),
+            ),
+            'regularity_question' => array(
+                'text'    => 'کدوم ریتم منظم‌تر به نظر رسید؟',
+                'options' => array( 'a' => 'ریتم اول', 'b' => 'ریتم دوم' ),
+            ),
         );
     }
 
-    /**
-     * Goals/preferences — not scored, drives recommendation only.
-     */
-    public static function get_goals_questions() {
+    // Stage 3 — Music Style. TODO: replace 'file' with your real clip filenames
+    // once sourced, placed under assets/audio/.
+    public static function get_style_clips() {
         return array(
-            array( 'id' => 'g1', 'question' => 'چرا مایل به یادگیری موسیقی هستید؟',
-                'options' => array(
-                    'hobby'   => 'به عنوان سرگرمی',
-                    'kid_dev' => 'رشد فرزندم',
-                    'serious' => 'دنبال کردن جدی موسیقی',
-                    'social'  => 'فعالیت اجتماعی/دورهمی',
-                ) ),
-            array( 'id' => 'g2', 'question' => 'سن شما در چه بازه‌ای است؟',
-                'options' => array(
-                    'child' => 'کودک (زیر ۱۲ سال)',
-                    'teen'  => 'نوجوان (۱۲ تا ۱۸ سال)',
-                    'adult' => 'بزرگسال',
-                ) ),
-            array( 'id' => 'g3', 'question' => 'آیا سازی مد نظرتان است؟',
-                'options' => array(
-                    'string'  => 'سازهای زهی (گیتار، ویولن، ...)',
-                    'keys'    => 'سازهای کلاویه‌ای (پیانو، ارگ، ...)',
-                    'wind'    => 'سازهای بادی',
-                    'perc'    => 'سازهای کوبه‌ای',
-                    'plucked' => 'سازهای زهی مضرابی (سنتور، قانون، چنگ، ...)',
-                    'vocal'   => 'آواز و آموزش موسیقی',
-                    'iranian' => 'سازهای سنتی ایرانی',
-                    'none'    => 'هنوز مشخص نیست',
-                ) ),
+            array( 'id' => 'classical',   'label' => 'کلاسیک',   'file' => 'classical.mp3' ),
+            array( 'id' => 'traditional', 'label' => 'سنتی',     'file' => 'traditional.mp3' ),
+            array( 'id' => 'rock',        'label' => 'راک',      'file' => 'rock.mp3' ),
+            array( 'id' => 'pop',         'label' => 'پاپ',      'file' => 'pop.mp3' ),
+            array( 'id' => 'jazz',        'label' => 'جز',       'file' => 'jazz.mp3' ),
         );
     }
 
-    /**
-     * Same as get_ear_questions() but strips the answer key —
-     * this is what gets sent to the browser.
-     */
-    public static function get_ear_questions_frontend() {
-        return array_map( function( $q ) {
-            unset( $q['correct'] );
-            return $q;
-        }, self::get_ear_questions() );
+    // Stage 4 — Personality
+    public static function get_personality_questions() {
+        return array(
+            array(
+                'id'      => 'vacation',
+                'text'    => 'برای تعطیلات چی رو ترجیح می‌دی؟',
+                'options' => array( 'nature' => '🏔 طبیعت', 'city' => '🏙 شهر', 'home' => '🏠 خونه' ),
+            ),
+            array(
+                'id'      => 'stage',
+                'text'    => 'اگه قرار بود روی صحنه اجرا کنی...',
+                'options' => array( 'excited' => '😀 هیجان‌زده می‌شدم', 'normal' => '😐 عادی بودم', 'stressed' => '😨 استرس می‌گرفتم' ),
+            ),
+        );
+    }
+
+    // Stage 5 — Mood (CSS-tile based, no image assets needed)
+    public static function get_mood_options() {
+        return array(
+            array( 'id' => 'rain',   'label' => 'بارون',   'emoji' => '🌧' ),
+            array( 'id' => 'ocean',  'label' => 'دریا',     'emoji' => '🌊' ),
+            array( 'id' => 'fire',   'label' => 'آتیش',     'emoji' => '🔥' ),
+            array( 'id' => 'flower', 'label' => 'شکوفه',    'emoji' => '🌸' ),
+        );
     }
 }

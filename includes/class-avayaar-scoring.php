@@ -4,98 +4,100 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 class Avayaar_Scoring {
 
     public static function calculate_result( $answers ) {
-        $rhythm_score = self::score_rhythm( $answers['rhythm'] ?? array() );
-        $ear_score    = self::score_ear( $answers['ear'] ?? array() );
-        $archetype    = self::determine_archetype( $rhythm_score, $ear_score );
+        $map = Avayaar_Family_Weights::get_map();
+        $w   = Avayaar_Family_Weights::STAGE_WEIGHTS;
 
-        $preference = $answers['goals']['g3'] ?? 'none';
-        $age        = $answers['goals']['g2'] ?? '';
+        $totals = array( 'string' => 0, 'keys' => 0, 'wind' => 0, 'perc' => 0, 'plucked' => 0, 'vocal' => 0, 'iranian' => 0 );
 
-        $resolved_ids = self::get_recommended_instruments( $archetype, $preference, $age );
+        $rhythm_tier = self::rhythm_tier( $answers['rhythm'] ?? array() );
+        self::add( $totals, $map['rhythm_tier'][ $rhythm_tier ] ?? array(), $w['rhythm'] );
+
+        $ear = $answers['ear'] ?? array();
+        self::add( $totals, $map['ear_tempo'][ $ear['tempo'] ?? '' ] ?? array(), $w['ear'] );
+        self::add( $totals, $map['ear_regularity'][ $ear['regularity'] ?? '' ] ?? array(), $w['ear'] );
+
+        foreach ( ( $answers['style'] ?? array() ) as $genre ) {
+            self::add( $totals, $map['style'][ $genre ] ?? array(), $w['style'] );
+        }
+
+        $personality = $answers['personality'] ?? array();
+        self::add( $totals, $map['personality_vacation'][ $personality['vacation'] ?? '' ] ?? array(), $w['personality'] );
+        self::add( $totals, $map['personality_stage'][ $personality['stage'] ?? '' ] ?? array(), $w['personality'] );
+
+        self::add( $totals, $map['mood'][ $answers['mood'] ?? '' ] ?? array(), $w['mood'] );
+
+        arsort( $totals );
+        $top_families = array_slice( array_keys( $totals ), 0, 3 );
+        $max_score    = reset( $totals ) ?: 1;
+
+        $top_with_pct = array();
+        foreach ( $top_families as $family ) {
+            // Always land in a flattering 65–96% band — this is a match
+            // indicator, not a graded score, by design.
+            $pct = 65 + (int) round( ( $totals[ $family ] / $max_score ) * 31 );
+            $top_with_pct[ $family ] = min( 96, $pct );
+        }
+
+        $badge = self::determine_badge( $rhythm_tier, $ear, $answers['style'] ?? array() );
 
         return array(
-            'module_scores'           => array( 'rhythm' => $rhythm_score, 'ear' => $ear_score ),
-            'archetype'                => $archetype,
-            'recommended_instruments'  => $resolved_ids,
+            'top_families'            => $top_with_pct,
+            'badge'                   => $badge,
+            'recommended_instruments' => self::resolve_instruments( array_keys( $top_with_pct ) ),
         );
     }
 
-    private static function score_rhythm( $rhythm_answers ) {
-        if ( empty( $rhythm_answers ) ) return 0;
+    private static function add( &$totals, $vector, $stage_weight ) {
+        foreach ( $vector as $family => $points ) {
+            if ( isset( $totals[ $family ] ) ) $totals[ $family ] += $points * $stage_weight;
+        }
+    }
 
-        $total_accuracy = 0;
-        $count = 0;
+    private static function rhythm_tier( $rhythm_answers ) {
+        if ( empty( $rhythm_answers ) ) return 'steady';
 
+        $deltas = array();
         foreach ( $rhythm_answers as $entry ) {
-            foreach ( ( $entry['tap_deltas_ms'] ?? array() ) as $delta_ms ) {
-                $abs_delta = abs( (float) $delta_ms );
-                $total_accuracy += max( 0, 1 - ( $abs_delta / 300 ) ); // 100ms=near-perfect, 300ms+=0 credit
-                $count++;
+            foreach ( ( $entry['tap_deltas_ms'] ?? array() ) as $d ) $deltas[] = abs( (float) $d );
+        }
+        if ( empty( $deltas ) ) return 'steady';
+
+        $avg = array_sum( $deltas ) / count( $deltas );
+        if ( $avg < 120 ) return 'agile';
+        if ( $avg < 250 ) return 'steady';
+        return 'relaxed';
+    }
+
+    private static function determine_badge( $rhythm_tier, $ear, $styles ) {
+        if ( $rhythm_tier === 'agile' ) return array( 'key' => 'rhythm_master', 'label' => 'استاد ریتم', 'emoji' => '🥁' );
+        if ( count( $styles ) >= 3 )   return array( 'key' => 'melody_hunter', 'label' => 'شکارچی ملودی', 'emoji' => '🎼' );
+        return array( 'key' => 'good_listener', 'label' => 'شنونده خوب', 'emoji' => '🎵' );
+    }
+
+    private static function resolve_instruments( $family_keys ) {
+        $term_ids_by_family = Avayaar_Recommendations::get_family_term_ids();
+        $result = array();
+
+        foreach ( $family_keys as $family ) {
+            $term_id = $term_ids_by_family[ $family ] ?? 0;
+            if ( ! $term_id ) continue;
+
+            $posts = get_posts( array(
+                'post_type'   => 'mam_instrument',
+                'post_status' => 'publish',
+                'numberposts' => 2,
+                'tax_query'   => array( array(
+                    'taxonomy' => Avayaar_Recommendations::TAXONOMY,
+                    'field'    => 'term_id',
+                    'terms'    => $term_id,
+                ) ),
+            ) );
+
+            foreach ( $posts as $p ) {
+                $result[] = array( 'id' => $p->ID, 'title' => get_the_title( $p ), 'url' => get_permalink( $p ), 'family' => $family );
             }
         }
 
-        return $count > 0 ? round( ( $total_accuracy / $count ) * 100 ) : 0;
-    }
-
-    private static function score_ear( $ear_answers ) {
-        if ( empty( $ear_answers ) ) return 0;
-
-        $by_id = array();
-        foreach ( Avayaar_Questions::get_ear_questions() as $q ) $by_id[ $q['id'] ] = $q;
-
-        $correct = 0;
-        foreach ( $ear_answers as $entry ) {
-            $q = $by_id[ $entry['id'] ] ?? null;
-            if ( $q && $entry['answer'] === $q['correct'] ) $correct++;
-        }
-
-        return round( ( $correct / count( $ear_answers ) ) * 100 );
-    }
-
-    private static function determine_archetype( $rhythm_score, $ear_score ) {
-        if ( $rhythm_score >= 70 && $ear_score >= 70 ) return 'balanced';
-        if ( $rhythm_score >= $ear_score + 15 )        return 'rhythm_driven';
-        if ( $ear_score >= $rhythm_score + 15 )        return 'ear_driven';
-        return 'beginner_friendly';
-    }
-
-    private static function get_recommended_instruments( $archetype, $preference, $age ) {
-        $family_ids = Avayaar_Recommendations::get_family_term_ids();
-
-        if ( $preference !== 'none' && ! empty( $family_ids[ $preference ] ) ) {
-            $family_term_id = $family_ids[ $preference ];
-        } else {
-            $fallback_key   = Avayaar_Recommendations::get_archetype_fallback_family()[ $archetype ] ?? 'keys';
-            $family_term_id = $family_ids[ $fallback_key ] ?? 0;
-        }
-
-        if ( empty( $family_term_id ) ) return array();
-
-        $children_term_id = ( $age === 'child' ) ? Avayaar_Recommendations::get_children_term_id() : 0;
-
-        if ( $children_term_id ) {
-            $ids = self::query_by_terms( array( $family_term_id, $children_term_id ) );
-            if ( ! empty( $ids ) ) return $ids;
-        }
-
-        return self::query_by_terms( array( $family_term_id ) );
-    }
-
-    private static function query_by_terms( $term_ids ) {
-        $posts = get_posts( array(
-            'post_type'   => 'mam_instrument',
-            'post_status' => 'publish',
-            'numberposts' => -1,
-            'tax_query'   => array(
-                array(
-                    'taxonomy' => Avayaar_Recommendations::TAXONOMY,
-                    'field'    => 'term_id',
-                    'terms'    => $term_ids,
-                    'operator' => count( $term_ids ) > 1 ? 'AND' : 'IN',
-                ),
-            ),
-        ) );
-
-        return wp_list_pluck( $posts, 'ID' );
+        return $result;
     }
 }
